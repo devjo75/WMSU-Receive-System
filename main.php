@@ -127,7 +127,7 @@ $user_role_display = ucfirst($user_role);
     <main class="lg:ml-64 min-h-screen">
 
         <!-- Top Bar -->
-        <header class="bg-white shadow-sm sticky top-0 z-20">
+        <header class="bg-white shadow-sm fixed top-0 right-0 left-0 lg:left-64 z-20">
             <div class="px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
                     <div class="ml-12 lg:ml-0">
@@ -161,7 +161,7 @@ $user_role_display = ucfirst($user_role);
         </header>
 
         <!-- Page Content -->
-        <div class="px-4 sm:px-6 lg:px-8 py-8">
+        <div class="px-4 sm:px-6 lg:px-8 py-8 pt-24">
 
             <div class="grid grid-cols-1">
 
