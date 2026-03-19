@@ -15,7 +15,7 @@ define('SESSION_WARNING', 60);   // Show warning 60 seconds before expiry
 
 // If not logged in, redirect to login
 if (empty($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header('Location: login.php?reason=unauthenticated');
+    header('Location: ../login.php?reason=unauthenticated');
     exit;
 }
 
@@ -29,7 +29,7 @@ if (isset($_SESSION['last_activity'])) {
         session_destroy();
         session_start();
         $_SESSION['session_expired'] = true;
-        header('Location: login.php?reason=expired');
+        header('Location: ../login.php?reason=expired');
         exit;
     }
 }
