@@ -62,7 +62,7 @@ $isReceivingActive = (
                 <div class="flex items-center">
 
                     <!-- CLICKABLE MAIN -->
-                    <a href="<?= $base ?>main.php"
+                    <a href="<?= $base ?>main/main.php"
                        class="flex-1 flex items-center px-4 py-3 rounded-l-lg transition-colors <?= $isReceivingActive ? 'bg-red-700 font-semibold' : 'hover:bg-red-800' ?>">
                         
                         <span class="mr-3"><i class="fa-solid fa-receipt"></i></span>

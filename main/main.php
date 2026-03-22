@@ -1,8 +1,7 @@
 <?php
 session_start();
 
-require_once 'auth-guard/Auth.php';
-
+require_once '../auth-guard/Auth.php';
 // Uncomment to protect this page:
 // if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
 //     header('Location: login.php');
@@ -108,7 +107,7 @@ $all_receivers = [
 </head>
 <body class="bg-gray-100">
 
-    <?php include __DIR__ . '/sidebar/sidebar.php'; ?>
+    <?php include __DIR__ . '/../sidebar/sidebar.php'; ?>
 
     <!-- Main Content -->
     <main class="lg:ml-64 min-h-screen">
