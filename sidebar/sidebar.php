@@ -30,7 +30,7 @@ function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
 // RECEIVING ACTIVE (main.php + inbox)
 $isReceivingActive = (
     $current_page === 'main.php' ||
-    $current_dir === 'inbox'
+    $current_dir === 'pages'
 );
 ?>
 
@@ -62,7 +62,7 @@ $isReceivingActive = (
                 <div class="flex items-center">
 
                     <!-- CLICKABLE MAIN -->
-                    <a href="<?= $base ?>main/main.php"
+                    <a href="<?= $base ?>pages/main.php"
                        class="flex-1 flex items-center px-4 py-3 rounded-l-lg transition-colors <?= $isReceivingActive ? 'bg-red-700 font-semibold' : 'hover:bg-red-800' ?>">
                         
                         <span class="mr-3"><i class="fa-solid fa-receipt"></i></span>
@@ -84,13 +84,13 @@ $isReceivingActive = (
                 <ul id="receivingMenu" class="<?= $isReceivingActive ? '' : 'hidden' ?> ml-6 mt-2 space-y-1">
 
                     <li>
-                        <a href="<?= $base ?>inbox/inbox.php"
+                        <a href="<?= $base ?>pages/inbox.php"
                            class="block px-4 py-2 rounded-lg text-sm <?= ($current_page === 'inbox.php') ? 'bg-red-700 font-semibold' : 'hover:bg-red-700' ?>">
                            Inbox
                         </a>
                     </li>
                     <li>
-                        <a href="<?= $base ?>release/release.php"
+                        <a href="<?= $base ?>pages/release.php"
                            class="block px-4 py-2 rounded-lg text-sm <?= ($current_page === 'release.php') ? 'bg-red-700 font-semibold' : 'hover:bg-red-700' ?>">
                            Release
                         </a>
