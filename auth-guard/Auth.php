@@ -44,16 +44,18 @@ if (empty($_SESSION['user_role'])) {
 
 /**
  * Helper: Check if current user is Admin
+ * Covers both the session-mapped 'admin' value and raw DB role 'Admin'.
  */
 function is_admin(): bool {
-    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+    $role = $_SESSION['user_role'] ?? '';
+    return strtolower($role) === 'admin';
 }
 
 /**
- * Helper: Check if current user is Viewer
+ * Helper: Check if current user is a non-admin (Staff / Faculty / Employee / viewer)
  */
 function is_viewer(): bool {
-    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'viewer';
+    return !is_admin();
 }
 
 /**

@@ -26,9 +26,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm_password) {
         $error = 'Passwords do not match.';
     } else {
-        // TODO: Insert user into database here.
-        // For now, show a success message and redirect to login.
-        $success = 'Account created successfully! You can now log in.';
+        require_once __DIR__ . '/config/db.php';
+
+        try {
+            $pdo = getPDO();
+
+            // Check if email already exists
+            $check = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+            $check->execute([$email]);
+
+            if ($check->fetch()) {
+                $error = 'An account with that email address already exists.';
+            } else {
+                $username      = explode('@', $email)[0]; // derive username from email
+                $password_hash = password_hash($password, PASSWORD_BCRYPT);
+
+                $insert = $pdo->prepare(
+                    'INSERT INTO users (username, email, password_hash, full_name, role, is_active)
+                     VALUES (?, ?, ?, ?, 'Staff', 1)'
+                );
+                $insert->execute([$username, $email, $password_hash, $full_name]);
+
+                $success = 'Account created successfully! You can now log in.';
+            }
+        } catch (Exception $e) {
+            $error = 'A system error occurred. Please try again later.';
+        }
     }
 }
 ?>

@@ -18,26 +18,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
     } else {
-        $demo_accounts = [
-            'admin@wmsu.edu.ph'  => ['password' => 'password123', 'role' => 'admin'],
-            'viewer@wmsu.edu.ph' => ['password' => 'viewer123',   'role' => 'viewer'],
-        ];
+        require_once __DIR__ . '/config/db.php';
 
-        if (isset($demo_accounts[$email]) && $demo_accounts[$email]['password'] === $password) {
-            session_regenerate_id(true);
-            $_SESSION['user_email']    = $email;
-            $_SESSION['logged_in']     = true;
-            $_SESSION['user_role']     = $demo_accounts[$email]['role'];
-            $_SESSION['last_activity'] = time(); // ← Set on login
+        try {
+            $pdo  = getPDO();
+            $stmt = $pdo->prepare(
+                'SELECT id, email, password_hash, role, full_name, is_active
+                 FROM users WHERE email = ? LIMIT 1'
+            );
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
 
-            if ($remember) {
-                setcookie('remember_email', $email, time() + (30 * 24 * 3600), '/');
+            if ($user && $user['is_active'] && password_verify($password, $user['password_hash'])) {
+                // Map DB role to session role used by Auth.php helpers
+                $role = strtolower($user['role']) === 'admin' ? 'admin' : 'viewer';
+
+                session_regenerate_id(true);
+                $_SESSION['user_id']       = $user['id'];
+                $_SESSION['user_email']    = $user['email'];
+                $_SESSION['user_name']     = $user['full_name'];
+                $_SESSION['user_role']     = $role;
+                $_SESSION['logged_in']     = true;
+                $_SESSION['last_activity'] = time();
+
+                // Update last_login timestamp
+                $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')
+                    ->execute([$user['id']]);
+
+                if ($remember) {
+                    setcookie('remember_email', $email, time() + (30 * 24 * 3600), '/');
+                }
+
+                header('Location: dashboard/dashboard.php');
+                exit;
+            } else {
+                $error = 'Invalid email or password. Please try again.';
             }
-
-            header('Location: dashboard/dashboard.php');
-            exit;
-        } else {
-            $error = 'Invalid email or password. Please try again.';
+        } catch (Exception $e) {
+            $error = 'A system error occurred. Please try again later.';
         }
     }
 }
