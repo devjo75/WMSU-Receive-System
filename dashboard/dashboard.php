@@ -43,6 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
 
     if (!$username || !$email || !$password || !$full_name) {
         $error = 'Please fill in all required fields.';
+    } elseif (!str_ends_with(strtolower($email), '@wmsu.edu.ph')) {
+        $error = 'Only @wmsu.edu.ph email addresses are allowed.';
     } else {
         $chk = $pdo->prepare("SELECT id FROM users WHERE email = :e OR username = :u LIMIT 1");
         $chk->execute([':e' => $email, ':u' => $username]);
@@ -97,6 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
 
     if (!$id || !$username || !$email || !$full_name) {
         $error = 'Please fill in all required fields.';
+    } elseif (!str_ends_with(strtolower($email), '@wmsu.edu.ph')) {
+        $error = 'Only @wmsu.edu.ph email addresses are allowed.';
     } else {
         $chk = $pdo->prepare("SELECT id FROM users WHERE (email=:e OR username=:u) AND id!=:id LIMIT 1");
         $chk->execute([':e' => $email, ':u' => $username, ':id' => $id]);
@@ -363,8 +367,12 @@ $users = $pdo->query("
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1 font-secondary">Email <span class="text-crimson-600">*</span></label>
-                    <input type="email" name="email" required placeholder="user@wmsu.edu.ph"
+                    <input type="email" name="email" id="addEmail" required placeholder="user@wmsu.edu.ph"
+                        pattern="[a-zA-Z0-9._%+\-]+@wmsu\.edu\.ph"
+                        title="Only @wmsu.edu.ph email addresses are allowed"
+                        oninput="validateWmsuEmail(this,'addEmailHint')"
                         class="w-full border-2 border-gray-200 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition font-secondary">
+                    <p id="addEmailHint" class="mt-1 text-xs text-gray-400 font-secondary hidden">Must end with <span class="font-semibold">@wmsu.edu.ph</span></p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1 font-secondary">Password <span class="text-crimson-600">*</span></label>
@@ -441,7 +449,11 @@ $users = $pdo->query("
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1 font-secondary">Email <span class="text-crimson-600">*</span></label>
                     <input type="email" name="email" id="editEmail" required
+                        pattern="[a-zA-Z0-9._%+\-]+@wmsu\.edu\.ph"
+                        title="Only @wmsu.edu.ph email addresses are allowed"
+                        oninput="validateWmsuEmail(this,'editEmailHint')"
                         class="w-full border-2 border-gray-200 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition font-secondary">
+                    <p id="editEmailHint" class="mt-1 text-xs text-gray-400 font-secondary hidden">Must end with <span class="font-semibold">@wmsu.edu.ph</span></p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1 font-secondary">New Password <span class="text-gray-400 font-normal text-xs">(leave blank to keep current)</span></label>
@@ -514,6 +526,25 @@ $users = $pdo->query("
         </form>
     </div>
 </div>
+
+<script>
+function validateWmsuEmail(input, hintId) {
+    const hint  = document.getElementById(hintId);
+    const valid = input.value.toLowerCase().endsWith('@wmsu.edu.ph');
+    if (input.value === '') {
+        input.classList.remove('border-crimson-500', 'border-green-500');
+        hint.classList.add('hidden');
+    } else if (valid) {
+        input.classList.remove('border-crimson-500');
+        input.classList.add('border-green-500');
+        hint.classList.add('hidden');
+    } else {
+        input.classList.remove('border-green-500');
+        input.classList.add('border-crimson-500');
+        hint.classList.remove('hidden');
+    }
+}
+</script>
 
 <script>
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }

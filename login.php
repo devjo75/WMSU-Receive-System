@@ -18,26 +18,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
     } else {
-        $demo_accounts = [
-            'admin@wmsu.edu.ph'  => ['password' => 'password123', 'role' => 'admin'],
-            'viewer@wmsu.edu.ph' => ['password' => 'viewer123',   'role' => 'viewer'],
-        ];
+        require_once __DIR__ . '/config/db.php';
 
-        if (isset($demo_accounts[$email]) && $demo_accounts[$email]['password'] === $password) {
-            session_regenerate_id(true);
-            $_SESSION['user_email']    = $email;
-            $_SESSION['logged_in']     = true;
-            $_SESSION['user_role']     = $demo_accounts[$email]['role'];
-            $_SESSION['last_activity'] = time(); // ← Set on login
+        try {
+            $pdo  = getPDO();
+            $stmt = $pdo->prepare(
+                'SELECT id, email, password_hash, role, full_name, is_active
+                 FROM users WHERE email = ? LIMIT 1'
+            );
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
 
-            if ($remember) {
-                setcookie('remember_email', $email, time() + (30 * 24 * 3600), '/');
+            if ($user && $user['is_active'] && password_verify($password, $user['password_hash'])) {
+                // Map DB role to session role used by Auth.php helpers
+                $role = strtolower($user['role']) === 'admin' ? 'admin' : 'viewer';
+
+                session_regenerate_id(true);
+                $_SESSION['user_id']       = $user['id'];
+                $_SESSION['user_email']    = $user['email'];
+                $_SESSION['user_name']     = $user['full_name'];
+                $_SESSION['user_role']     = $role;
+                $_SESSION['logged_in']     = true;
+                $_SESSION['last_activity'] = time();
+
+                // Update last_login timestamp
+                $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')
+                    ->execute([$user['id']]);
+
+                if ($remember) {
+                    setcookie('remember_email', $email, time() + (30 * 24 * 3600), '/');
+                }
+
+                header('Location: dashboard/dashboard.php');
+                exit;
+            } else {
+                $error = 'Invalid email or password. Please try again.';
             }
-
-            header('Location: dashboard/dashboard.php');
-            exit;
-        } else {
-            $error = 'Invalid email or password. Please try again.';
+        } catch (Exception $e) {
+            $error = 'A system error occurred. Please try again later.';
         }
     }
 }
@@ -140,7 +158,7 @@ $remembered_email = $_COOKIE['remember_email'] ?? '';
                     </svg>
                 </div>
                 <h1 class="text-3xl font-bold text-white font-main">Login</h1>
-                <p class="text-crimson-100 mt-2 font-secondary">or Sign up to continue</p>
+                <p class="text-crimson-100 mt-2 font-secondary">Sign in to continue</p>
             </div>
 
             <!-- Form -->
@@ -180,10 +198,27 @@ $remembered_email = $_COOKIE['remember_email'] ?? '';
                         <label for="password" class="block text-sm font-semibold text-gray-700 mb-2 font-secondary">
                             Password
                         </label>
-                        <input type="password" id="password" name="password" required
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none 
-                                   focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary"
-                            placeholder="••••••••">
+                        <div class="relative">
+                            <input type="password" id="password" name="password" required
+                                class="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary"
+                                placeholder="••••••••">
+                            <button type="button" id="togglePassword"
+                                class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 hover:text-crimson-700 transition duration-200"
+                                aria-label="Toggle password visibility">
+                                <!-- Eye icon (password hidden) -->
+                                <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <!-- Eye-off icon (password visible) -->
+                                <svg id="eyeOffIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -208,12 +243,7 @@ $remembered_email = $_COOKIE['remember_email'] ?? '';
 
                 </form>
 
-                <p class="mt-8 text-center text-sm text-gray-600 font-secondary">
-                    Don't have an account?
-                    <a href="register.php" class="font-semibold text-crimson-700 hover:text-crimson-800 transition duration-200">
-                        Sign up now
-                    </a>
-                </p>
+
 
             </div>
         </div>
@@ -224,6 +254,18 @@ $remembered_email = $_COOKIE['remember_email'] ?? '';
     </div>
 
     <script>
+        // Show / hide password toggle
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const input      = document.getElementById('password');
+            const eyeIcon    = document.getElementById('eyeIcon');
+            const eyeOffIcon = document.getElementById('eyeOffIcon');
+            const isHidden   = input.type === 'password';
+
+            input.type       = isHidden ? 'text' : 'password';
+            eyeIcon.classList.toggle('hidden', isHidden);
+            eyeOffIcon.classList.toggle('hidden', !isHidden);
+        });
+
         document.getElementById('loginForm').addEventListener('submit', function () {
             const email    = document.getElementById('email').value;
             const password = document.getElementById('password').value;
