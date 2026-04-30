@@ -217,15 +217,15 @@ $users = $pdo->query("
         <header class="bg-white shadow-sm sticky top-0 z-20">
             <div class="px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
                         <button id="burgerBtn" class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0" aria-label="Toggle menu">
                             <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
                             <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
                             <span class="block w-5 h-0.5 bg-gray-700 rounded"></span>
                         </button>
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 font-main">Dashboard</h2>
-                            <p class="text-sm text-gray-600 mt-1 font-secondary">User management &amp; account overview</p>
+                        <div class="min-w-0">
+                            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 font-main truncate">Dashboard</h2>
+                            <p class="hidden sm:block text-sm text-gray-600 mt-1 font-secondary">User management &amp; account overview</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -267,16 +267,16 @@ $users = $pdo->query("
             <?php endif; ?>
 
             <div class="bg-white rounded-2xl shadow p-6">
-                <div class="flex items-center justify-between mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                     <div>
                         <h3 class="text-xl font-bold text-gray-800 font-main">User Accounts</h3>
                         <p class="text-sm text-gray-500 font-secondary mt-1"><?= count($users) ?> users registered</p>
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
                         <input type="text" id="searchInput" placeholder="Search users..." oninput="filterTable()"
-                            class="px-4 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary w-52">
+                            class="flex-1 sm:w-52 px-4 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary">
                         <button onclick="openModal('addModal')"
-                            class="bg-crimson-700 hover:bg-crimson-800 text-white px-4 py-2 rounded-lg transition duration-200 text-sm font-semibold font-secondary">
+                            class="flex-shrink-0 bg-crimson-700 hover:bg-crimson-800 text-white px-4 py-2 rounded-lg transition duration-200 text-sm font-semibold font-secondary">
                             + Add User
                         </button>
                     </div>

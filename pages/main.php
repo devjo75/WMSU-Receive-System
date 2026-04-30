@@ -410,15 +410,15 @@ $avatar_colors = [
         <header class="bg-white shadow-sm sticky top-0 z-20">
             <div class="px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
                         <button id="burgerBtn" class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0" aria-label="Toggle menu">
                             <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
                             <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
                             <span class="block w-5 h-0.5 bg-gray-700 rounded"></span>
                         </button>
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 font-main">Receiving Department</h2>
-                            <p class="text-sm text-gray-600 mt-1 font-secondary">Process and verify incoming documents</p>
+                        <div class="min-w-0">
+                            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 font-main truncate">Receiving Department</h2>
+                            <p class="hidden sm:block text-sm text-gray-600 mt-1 font-secondary">Process and verify incoming documents</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -447,9 +447,9 @@ $avatar_colors = [
             <div class="grid grid-cols-1">
                 <div>
                     <div class="bg-white rounded-2xl shadow p-6">
-                        <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center justify-between gap-3 mb-6">
                             <h3 class="text-xl font-bold text-gray-800 font-main">Receive New Document</h3>
-                            <span class="px-3 py-1 bg-crimson-100 text-crimson-700 rounded-lg text-sm font-semibold font-secondary">New Entry</span>
+                            <span class="flex-shrink-0 px-3 py-1 bg-crimson-100 text-crimson-700 rounded-lg text-sm font-semibold font-secondary">New Entry</span>
                         </div>
 
                         <?php if ($success): ?>
@@ -511,52 +511,54 @@ $avatar_colors = [
                                     <span class="ml-2 text-xs font-normal text-gray-400"><?= count($all_receivers) ?> receiver(s) available</span>
                                 </p>
 
-                                <div class="flex flex-col sm:flex-row gap-3 mb-4">
-                                    <div class="flex-1 flex items-center gap-2">
+                                <div class="flex flex-col gap-3 mb-4">
+                                    <div class="flex items-center gap-2">
                                         <div class="relative flex-1">
                                             <label for="receiverSearch" class="block text-xs font-semibold text-gray-600 mb-1 font-secondary">Search Name</label>
                                             <input type="text" id="receiverSearch" placeholder="Name / Id number"
                                                 class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary text-sm">
                                         </div>
-                                        <button type="button" class="mt-5 p-3 text-gray-400 hover:text-crimson-700 transition duration-200">
+                                        <button type="button" class="mt-5 p-3 text-gray-400 hover:text-crimson-700 transition duration-200 flex-shrink-0">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M10 18h4"/>
                                             </svg>
                                         </button>
                                     </div>
-                                    <div class="sm:w-44">
-                                        <label for="filterRole" class="block text-xs font-semibold text-gray-600 mb-1 font-secondary">Filter by Role</label>
-                                        <select id="filterRole" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary text-sm text-gray-500">
-                                            <option value="">Choose a role</option>
-                                            <option value="FACULTY">Faculty</option>
-                                            <option value="STAFF">Staff</option>
-                                            <option value="STUDENT">Student</option>
-                                            <option value="ADMIN">Admin</option>
-                                        </select>
-                                    </div>
-                                    <div class="sm:w-52">
-                                        <label for="filterDepartment" class="block text-xs font-semibold text-gray-600 mb-1 font-secondary">Filter by Department</label>
-                                        <select id="filterDepartment" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary text-sm text-gray-500">
-                                            <option value="">Choose department</option>
-                                            <option value="CA">College of Agriculture</option>
-                                            <option value="CA">College of Architecture</option>
-                                            <option value="CAIS">College of Asian &amp; Islamic Studies</option>
-                                            <option value="CCS">College of Computing Studies</option>
-                                            <option value="CCJE">College of Criminal Justice Education</option>
-                                            <option value="COE">College of Engineering</option>
-                                            <option value="CFES">College of Forestry &amp; Environmental Studies</option>
-                                            <option value="CHE">College of Home Economics</option>
-                                            <option value="COL">College of Law</option>
-                                            <option value="CLA">College of Liberal Arts</option>
-                                            <option value="CM">College of Medicine</option>
-                                            <option value="CN">College of Nursing</option>
-                                            <option value="CPADS">College of Public Administration &amp; Development Studies</option>
-                                            <option value="CSM">College of Science and Mathematics</option>
-                                            <option value="CSWCD">College of Social Work &amp; Community Development</option>
-                                            <option value="CSSPE">College of Sports Science &amp; Physical Education</option>
-                                            <option value="CTE">College of Teacher Education</option>
-                                            <option value="PSMP">Professional Science Master's Program</option>
-                                        </select>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label for="filterRole" class="block text-xs font-semibold text-gray-600 mb-1 font-secondary">Filter by Role</label>
+                                            <select id="filterRole" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary text-sm text-gray-500">
+                                                <option value="">All Roles</option>
+                                                <option value="FACULTY">Faculty</option>
+                                                <option value="STAFF">Staff</option>
+                                                <option value="STUDENT">Student</option>
+                                                <option value="ADMIN">Admin</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="filterDepartment" class="block text-xs font-semibold text-gray-600 mb-1 font-secondary">Filter by Department</label>
+                                            <select id="filterDepartment" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-crimson-700 focus:ring-2 focus:ring-crimson-200 transition duration-200 font-secondary text-sm text-gray-500">
+                                                <option value="">All Departments</option>
+                                                <option value="CA">College of Agriculture</option>
+                                                <option value="CA">College of Architecture</option>
+                                                <option value="CAIS">College of Asian &amp; Islamic Studies</option>
+                                                <option value="CCS">College of Computing Studies</option>
+                                                <option value="CCJE">College of Criminal Justice Education</option>
+                                                <option value="COE">College of Engineering</option>
+                                                <option value="CFES">College of Forestry &amp; Environmental Studies</option>
+                                                <option value="CHE">College of Home Economics</option>
+                                                <option value="COL">College of Law</option>
+                                                <option value="CLA">College of Liberal Arts</option>
+                                                <option value="CM">College of Medicine</option>
+                                                <option value="CN">College of Nursing</option>
+                                                <option value="CPADS">College of Public Administration &amp; Development Studies</option>
+                                                <option value="CSM">College of Science and Mathematics</option>
+                                                <option value="CSWCD">College of Social Work &amp; Community Development</option>
+                                                <option value="CSSPE">College of Sports Science &amp; Physical Education</option>
+                                                <option value="CTE">College of Teacher Education</option>
+                                                <option value="PSMP">Professional Science Master's Program</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -571,27 +573,27 @@ $avatar_colors = [
                                         $initials = implode('', array_map(fn($w) => strtoupper($w[0] ?? ''), $words));
                                     ?>
                                     <label
-                                        class="receiver-row flex items-center justify-between bg-white border-2 border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-crimson-400 hover:bg-crimson-50 transition duration-200"
+                                        class="receiver-row flex items-center justify-between bg-white border-2 border-gray-200 rounded-lg px-3 py-3 cursor-pointer hover:border-crimson-400 hover:bg-crimson-50 transition duration-200"
                                         data-name="<?= htmlspecialchars($r['name']) ?>"
                                         data-dept="<?= htmlspecialchars($r['dept']) ?>"
                                         data-role="<?= htmlspecialchars($r['role']) ?>"
                                     >
-                                        <div class="flex items-center gap-3">
+                                        <div class="flex items-center gap-3 min-w-0 flex-1">
                                             <input type="checkbox" name="receivers[]" value="<?= (int)$r['id'] ?>"
-                                                class="w-4 h-4 text-crimson-700 border-gray-300 rounded focus:ring-crimson-500">
+                                                class="w-4 h-4 text-crimson-700 border-gray-300 rounded focus:ring-crimson-500 flex-shrink-0">
                                             <div class="w-9 h-9 <?= $color ?> rounded-full flex items-center justify-center shrink-0">
                                                 <span class="text-white text-sm font-bold font-secondary"><?= htmlspecialchars(substr($initials,0,1)) ?></span>
                                             </div>
-                                            <div>
-                                                <span class="text-sm font-bold text-gray-800 font-secondary tracking-wide"><?= htmlspecialchars($r['name']) ?></span>
+                                            <div class="min-w-0 flex-1">
+                                                <span class="block text-sm font-bold text-gray-800 font-secondary tracking-wide truncate"><?= htmlspecialchars($r['name']) ?></span>
                                                 <?php if (!empty($r['email'])): ?>
-                                                <p class="text-xs text-gray-400 font-secondary"><?= htmlspecialchars($r['email']) ?></p>
+                                                <p class="text-xs text-gray-400 font-secondary truncate"><?= htmlspecialchars($r['email']) ?></p>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-3 text-sm font-semibold text-gray-500 font-secondary">
-                                            <span><?= htmlspecialchars($r['dept']) ?></span>
-                                            <span><?= htmlspecialchars($r['role']) ?></span>
+                                        <div class="flex items-center gap-2 ml-2 flex-shrink-0">
+                                            <span class="hidden sm:inline text-xs text-gray-400 font-secondary"><?= htmlspecialchars($r['dept']) ?></span>
+                                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-secondary"><?= htmlspecialchars($r['role']) ?></span>
                                         </div>
                                     </label>
                                     <?php endforeach; ?>
