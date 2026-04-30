@@ -402,7 +402,7 @@ $avatar_colors = [
 </head>
 <body class="bg-gray-100">
 
-    <?php $active_page = 'main'; include __DIR__ . '/../sidebar/sidebar.php'; ?>
+    <?php $active_page = 'receiving'; include __DIR__ . '/../sidebar/sidebar.php'; ?>
 
     <main class="lg:ml-64 min-h-screen">
 

@@ -50,14 +50,9 @@ function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
                 <?= navLink($base . 'dashboard/dashboard.php', 'fa-house', 'Dashboard', 'dashboard.php', 'dashboard') ?>
             </li>
 
-            <!-- ARCHIVE -->
-            <li>
-                <?= navLink($base . 'archive.php', 'fa-archive', 'Archive', 'archive.php') ?>
-            </li>
-
             <!-- RECEIVING -->
             <li>
-                <?= navLink($base . 'pages/main.php', 'fa-receipt', 'Receiving', 'main.php') ?>
+                <?= navLink($base . 'pages/receiving.php', 'fa-receipt', 'Receiving', 'receiving.php') ?>
             </li>
 
             <!-- INBOX -->
@@ -68,6 +63,11 @@ function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
             <!-- RELEASE -->
             <li>
                 <?= navLink($base . 'pages/release.php', 'fa-paper-plane', 'Release', 'release.php') ?>
+            </li>
+
+            <!-- ARCHIVE -->
+            <li>
+                <?= navLink($base . 'archive.php', 'fa-archive', 'Archive', 'archive.php') ?>
             </li>
 
             <!-- INVENTORY -->

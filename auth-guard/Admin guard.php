@@ -14,6 +14,6 @@ if (!function_exists('is_admin')) {
 if (!is_admin()) {
     // Store a flash message for main.php to display
     $_SESSION['flash_error'] = 'Access denied. You do not have permission to perform that action.';
-    header('Location: main.php?error=unauthorized');
+    header('Location: receiving.php?error=unauthorized');
     exit;
 }
