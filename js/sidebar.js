@@ -1,13 +1,22 @@
-const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-const sidebar       = document.getElementById('sidebar');
-const overlay       = document.getElementById('overlay');
+function openSidebar() {
+    document.getElementById('sidebar').classList.remove('-translate-x-full');
+    document.getElementById('sidebarOverlay').classList.remove('hidden');
+}
 
-mobileMenuBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
-});
+function closeSidebar() {
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    document.getElementById('sidebarOverlay').classList.add('hidden');
+}
 
-overlay.addEventListener('click', () => {
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
-});
+const burgerBtn = document.getElementById('burgerBtn');
+if (burgerBtn) {
+    burgerBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar.classList.contains('-translate-x-full')) {
+            openSidebar();
+        } else {
+            closeSidebar();
+        }
+    });
+}

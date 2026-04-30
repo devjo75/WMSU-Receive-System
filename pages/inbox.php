@@ -64,9 +64,16 @@ $user_role_display = ucfirst($user_role);
         <header class="bg-white shadow-sm sticky top-0 z-20">
             <div class="px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <div class="ml-12 lg:ml-0">
-                        <h2 class="text-2xl font-bold text-gray-800 font-main">Inbox</h2>
-                        <p class="text-sm text-gray-600 mt-1 font-secondary">Manage incoming document notifications</p>
+                    <div class="flex items-center gap-3">
+                        <button id="burgerBtn" class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0" aria-label="Toggle menu">
+                            <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
+                            <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
+                            <span class="block w-5 h-0.5 bg-gray-700 rounded"></span>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 font-main">Inbox</h2>
+                            <p class="text-sm text-gray-600 mt-1 font-secondary">Manage incoming document notifications</p>
+                        </div>
                     </div>
                     <div class="flex items-center space-x-4">
                         <button class="relative p-2 text-gray-600 hover:text-crimson-700 transition duration-200">
@@ -104,6 +111,8 @@ $user_role_display = ucfirst($user_role);
                 </div>
 
                 <!-- Table Header -->
+                <div class="overflow-x-auto">
+                <div class="min-w-[600px]">
                 <div class="grid grid-cols-12 text-xs text-gray-400 uppercase px-4 py-2 border-b font-secondary tracking-wider">
                     <div class="col-span-3">Sender</div>
                     <div class="col-span-3">Subject / Document</div>
@@ -143,6 +152,9 @@ $user_role_display = ucfirst($user_role);
                     </div>
                     <div class="col-span-2 text-right text-gray-500 text-sm font-secondary">May 3, 2025</div>
                 </div>
+
+                </div><!-- end min-w -->
+                </div><!-- end overflow-x-auto -->
 
             </div>
         </div>
@@ -195,5 +207,6 @@ document.getElementById('messageModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
 </script>
+<script src="../js/sidebar.js"></script>
 </body>
 </html>

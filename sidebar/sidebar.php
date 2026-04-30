@@ -27,14 +27,13 @@ function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
     ";
 }
 
-// RECEIVING ACTIVE (main.php + inbox)
-$isReceivingActive = (
-    $current_page === 'main.php' ||
-    $current_dir === 'pages'
-);
+
 ?>
 
-<aside class="fixed top-0 left-0 h-full w-64 bg-red-900 text-white flex flex-col justify-between shadow-2xl z-40">
+<!-- Mobile overlay backdrop -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="closeSidebar()"></div>
+
+<aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-red-900 text-white flex flex-col justify-between shadow-2xl z-40 -translate-x-full lg:translate-x-0 transition-transform duration-300">
 
     <!-- Branding -->
     <div class="bg-red-800 px-6 py-6 border-b border-red-700">
@@ -56,48 +55,19 @@ $isReceivingActive = (
                 <?= navLink($base . 'archive.php', 'fa-archive', 'Archive', 'archive.php') ?>
             </li>
 
-            <!-- RECEIVING (CLICKABLE + DROPDOWN) -->
+            <!-- RECEIVING -->
             <li>
+                <?= navLink($base . 'pages/main.php', 'fa-receipt', 'Receiving', 'main.php') ?>
+            </li>
 
-                <div class="flex items-center">
+            <!-- INBOX -->
+            <li>
+                <?= navLink($base . 'pages/inbox.php', 'fa-inbox', 'Inbox', 'inbox.php') ?>
+            </li>
 
-                    <!-- CLICKABLE MAIN -->
-                    <a href="<?= $base ?>pages/main.php"
-                       class="flex-1 flex items-center px-4 py-3 rounded-l-lg transition-colors <?= $isReceivingActive ? 'bg-red-700 font-semibold' : 'hover:bg-red-800' ?>">
-                        
-                        <span class="mr-3"><i class="fa-solid fa-receipt"></i></span>
-                        Receiving
-                    </a>
-
-                    <!-- DROPDOWN BUTTON -->
-                    <button onclick="toggleDropdown('receivingMenu')" 
-                        class="px-3 py-3 rounded-r-lg <?= $isReceivingActive ? 'bg-red-700' : 'hover:bg-red-800' ?>">
-                        
-                        <i id="receivingArrow"
-                           class="fa-solid fa-chevron-down text-sm transition-transform <?= $isReceivingActive ? 'rotate-180' : '' ?>">
-                        </i>
-                    </button>
-
-                </div>
-
-                <!-- DROPDOWN MENU -->
-                <ul id="receivingMenu" class="<?= $isReceivingActive ? '' : 'hidden' ?> ml-6 mt-2 space-y-1">
-
-                    <li>
-                        <a href="<?= $base ?>pages/inbox.php"
-                           class="block px-4 py-2 rounded-lg text-sm <?= ($current_page === 'inbox.php') ? 'bg-red-700 font-semibold' : 'hover:bg-red-700' ?>">
-                           Inbox
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?= $base ?>pages/release.php"
-                           class="block px-4 py-2 rounded-lg text-sm <?= ($current_page === 'release.php') ? 'bg-red-700 font-semibold' : 'hover:bg-red-700' ?>">
-                           Release
-                        </a>
-                    </li>
-
-                </ul>
-
+            <!-- RELEASE -->
+            <li>
+                <?= navLink($base . 'pages/release.php', 'fa-paper-plane', 'Release', 'release.php') ?>
             </li>
 
             <!-- INVENTORY -->
@@ -137,12 +107,3 @@ $isReceivingActive = (
 <!-- FONT AWESOME -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<script>
-function toggleDropdown(id) {
-    const menu = document.getElementById(id);
-    const arrow = document.getElementById('receivingArrow');
-
-    menu.classList.toggle('hidden');
-    arrow.classList.toggle('rotate-180');
-}
-</script>

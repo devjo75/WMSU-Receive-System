@@ -314,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['_memo_submit'])) {
                         </table>
                         </td></tr>
                         </table>
-                    </body>
+</body>
                     </html>';
 
                     $mail->AltBody = "Hello {$receiver['name']},\n\n"
@@ -410,9 +410,16 @@ $avatar_colors = [
         <header class="bg-white shadow-sm sticky top-0 z-20">
             <div class="px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <div class="ml-12 lg:ml-0">
-                        <h2 class="text-2xl font-bold text-gray-800 font-main">Receiving Department</h2>
-                        <p class="text-sm text-gray-600 mt-1 font-secondary">Process and verify incoming documents</p>
+                    <div class="flex items-center gap-3">
+                        <button id="burgerBtn" class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0" aria-label="Toggle menu">
+                            <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
+                            <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
+                            <span class="block w-5 h-0.5 bg-gray-700 rounded"></span>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 font-main">Receiving Department</h2>
+                            <p class="text-sm text-gray-600 mt-1 font-secondary">Process and verify incoming documents</p>
+                        </div>
                     </div>
                     <div class="flex items-center space-x-4">
                         <button class="relative p-2 text-gray-600 hover:text-crimson-700 transition duration-200">
@@ -768,5 +775,6 @@ $avatar_colors = [
         document.addEventListener('click', (e) => { if (!e.target.closest('.ac-wrapper')) acCloseAll(); });
     </script>
 
+<script src="../js/sidebar.js"></script>
 </body>
 </html>

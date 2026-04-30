@@ -217,9 +217,16 @@ $users = $pdo->query("
         <header class="bg-white shadow-sm sticky top-0 z-20">
             <div class="px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <div class="ml-12 lg:ml-0">
-                        <h2 class="text-2xl font-bold text-gray-800 font-main">Dashboard</h2>
-                        <p class="text-sm text-gray-600 mt-1 font-secondary">User management &amp; account overview</p>
+                    <div class="flex items-center gap-3">
+                        <button id="burgerBtn" class="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0" aria-label="Toggle menu">
+                            <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
+                            <span class="block w-5 h-0.5 bg-gray-700 mb-1 rounded"></span>
+                            <span class="block w-5 h-0.5 bg-gray-700 rounded"></span>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 font-main">Dashboard</h2>
+                            <p class="text-sm text-gray-600 mt-1 font-secondary">User management &amp; account overview</p>
+                        </div>
                     </div>
                     <div class="flex items-center space-x-4">
                         <button class="relative p-2 text-gray-600 hover:text-crimson-700 transition duration-200">
@@ -276,7 +283,7 @@ $users = $pdo->query("
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full text-sm min-w-[700px]" id="usersTable">
                         <thead class="text-gray-400 uppercase text-xs border-b font-secondary">
                             <tr>
                                 <th class="py-3 text-left">#</th>
@@ -289,9 +296,9 @@ $users = $pdo->query("
                                 <th class="py-3 text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="text-gray-600 divide-y divide-gray-100 font-secondary">
+                        <tbody class="text-gray-600 divide-y divide-gray-100 font-secondary" id="usersTableBody">
                             <?php foreach ($users as $i => $u): ?>
-                            <tr class="hover:bg-gray-50 user-row"
+                            <tr class="hover:bg-gray-50 user-row<?= $i >= 5 ? ' table-extra-row hidden' : '' ?>"
                                 data-search="<?= strtolower(htmlspecialchars($u['full_name'] . ' ' . $u['email'] . ' ' . ($u['department'] ?? ''))) ?>">
                                 <td class="py-3 text-gray-400"><?= $i + 1 ?></td>
                                 <td class="py-3">
@@ -336,6 +343,17 @@ $users = $pdo->query("
                     </table>
                     <p id="noResults" class="hidden text-center py-8 text-gray-400 text-sm font-secondary">No users match your search.</p>
                 </div>
+                <!-- Expand/Collapse Table Button -->
+                <?php if (count($users) > 5): ?>
+                <div class="mt-4 text-center">
+                    <button id="tableToggleBtn" onclick="toggleTableRows()" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-crimson-700 border-2 border-crimson-200 rounded-lg hover:bg-crimson-50 transition font-secondary">
+                        <span id="tableToggleLabel">Show all <?= count($users) ?> users</span>
+                        <svg id="tableToggleIcon" class="w-4 h-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </main>
@@ -579,13 +597,39 @@ function filterTable() {
     const q = document.getElementById('searchInput').value.toLowerCase();
     const rows = document.querySelectorAll('.user-row');
     let visible = 0;
+    const isSearching = q.length > 0;
     rows.forEach(row => {
         const match = row.dataset.search.includes(q);
-        row.classList.toggle('hidden', !match);
-        if (match) visible++;
+        // When searching: show all matching rows regardless of expand state
+        // When not searching: respect the tableExpanded state for extra rows
+        if (isSearching) {
+            row.classList.toggle('hidden', !match);
+        } else {
+            const isExtra = row.classList.contains('table-extra-row');
+            row.classList.toggle('hidden', !match || (isExtra && !tableExpanded));
+        }
+        if (match && !row.classList.contains('hidden')) visible++;
     });
     document.getElementById('noResults').classList.toggle('hidden', visible > 0);
+    // Update toggle button visibility
+    const toggleBtn = document.getElementById('tableToggleBtn');
+    if (toggleBtn) toggleBtn.classList.toggle('hidden', isSearching);
 }
 </script>
+<script>
+// Table expand/collapse
+let tableExpanded = false;
+function toggleTableRows() {
+    tableExpanded = !tableExpanded;
+    document.querySelectorAll('.table-extra-row').forEach(row => {
+        row.classList.toggle('hidden', !tableExpanded);
+    });
+    const label = document.getElementById('tableToggleLabel');
+    const icon  = document.getElementById('tableToggleIcon');
+    if (label) label.textContent = tableExpanded ? 'Collapse table' : 'Show all <?= count($users) ?> users';
+    if (icon)  icon.style.transform = tableExpanded ? 'rotate(180deg)' : '';
+}
+</script>
+<script src="../js/sidebar.js"></script>
 </body>
 </html>
