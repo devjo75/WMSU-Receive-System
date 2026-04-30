@@ -10,6 +10,29 @@ $base = '/WMSU-Receive-System/';
 $current_page = basename($_SERVER['PHP_SELF']);
 $current_dir  = basename(dirname($_SERVER['PHP_SELF']));
 
+// Fetch unread inbox count for the current user on every page
+// (inbox.php sets $inbox_unread itself before including sidebar,
+//  so we only query here when it hasn't been set yet)
+if (!isset($inbox_unread) && !empty($_SESSION['user_email'])) {
+    // db.php is already loaded by every page that includes this sidebar,
+    // but guard with function_exists just in case
+    if (function_exists('getPDO')) {
+        try {
+            $pdo_sidebar = getPDO();
+            $s = $pdo_sidebar->prepare(
+                "SELECT COUNT(*) FROM document_recipients
+                 WHERE recipient_email = ? AND status IN ('Pending', 'Sent')"
+            );
+            $s->execute([$_SESSION['user_email']]);
+            $inbox_unread = (int) $s->fetchColumn();
+        } catch (Exception $e) {
+            $inbox_unread = 0;
+        }
+    } else {
+        $inbox_unread = 0;
+    }
+}
+
 // NAV LINK FUNCTION
 function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
     global $current_page, $current_dir;
@@ -27,7 +50,27 @@ function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
     ";
 }
 
+// INBOX NAV LINK — same as navLink() but with an unread badge
+function inboxNavLink($href, $matchPage) {
+    global $current_page, $inbox_unread;
 
+    $isActive = ($current_page === $matchPage);
+    $classes  = $isActive ? 'bg-red-700 font-semibold' : 'hover:bg-red-800';
+
+    $badge = (!empty($inbox_unread) && $inbox_unread > 0)
+        ? '<span class="ml-auto bg-white text-red-900 text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 leading-none">'
+          . ($inbox_unread > 99 ? '99+' : $inbox_unread)
+          . '</span>'
+        : '';
+
+    return "
+        <a href=\"{$href}\" class=\"flex items-center px-4 py-3 rounded-lg transition-colors {$classes}\">
+            <span class=\"mr-3\"><i class=\"fa-solid fa-inbox\"></i></span>
+            Inbox
+            {$badge}
+        </a>
+    ";
+}
 ?>
 
 <!-- Mobile overlay backdrop -->
@@ -55,9 +98,9 @@ function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
                 <?= navLink($base . 'pages/receiving.php', 'fa-receipt', 'Receiving', 'receiving.php') ?>
             </li>
 
-            <!-- INBOX -->
+            <!-- INBOX (with unread badge) -->
             <li>
-                <?= navLink($base . 'pages/inbox.php', 'fa-inbox', 'Inbox', 'inbox.php') ?>
+                <?= inboxNavLink($base . 'pages/inbox.php', 'inbox.php') ?>
             </li>
 
             <!-- RELEASE -->
@@ -106,4 +149,3 @@ function navLink($href, $icon, $label, $matchPage, $matchDir = '') {
 
 <!-- FONT AWESOME -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-

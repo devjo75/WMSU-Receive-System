@@ -42,8 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $password_hash = password_hash($password, PASSWORD_BCRYPT);
 
                 $insert = $pdo->prepare(
-                    'INSERT INTO users (username, email, password_hash, full_name, role, is_active)
-                     VALUES (?, ?, ?, ?, 'Staff', 1)'
+                    "INSERT INTO users (username, email, password_hash, full_name, role, is_active)
+                     VALUES (?, ?, ?, ?, 'Staff', 1)"
                 );
                 $insert->execute([$username, $email, $password_hash, $full_name]);
 
