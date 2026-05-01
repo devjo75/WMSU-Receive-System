@@ -1,7 +1,6 @@
 <?php
 // ============================================================
-// mailer.php — PHPMailer config
-// Place this in /WMSU-Receive-System/config/mailer.php
+// mailer.php — PHPMailer config for InfinityFree
 // ============================================================
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -19,8 +18,8 @@ function createMailer(): PHPMailer {
     $mail->isSMTP();
     $mail->Host       = 'smtp.gmail.com';
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'eh202201365@wmsu.edu.ph';
-    $mail->Password   = 'cfcentyulrqcdfdl';       // App password (spaces removed)
+    $mail->Username   = 'eh202201365@wmsu.edu.ph';           // ← Keep or change
+    $mail->Password   = 'Dorkme#75';                  // ← Replace with real Gmail App Password
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port       = 587;
 

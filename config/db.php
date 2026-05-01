@@ -1,12 +1,12 @@
 <?php
 // ============================================================
-// db.php  —  PDO connection (place in /WMSU-Receive-System/config/)
+// db.php — PDO connection for InfinityFree
 // ============================================================
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'wmsu_documents');
-define('DB_USER', 'root');       // ← change to your DB user
-define('DB_PASS', '');           // ← change to your DB password
+define('DB_HOST', 'sql313.infinityfree.com');
+define('DB_NAME', 'if0_41778021_wmsu_documents');
+define('DB_USER', 'if0_41778021');
+define('DB_PASS', 'j4eMmEjEmt7kuuf');                    // ← PUT YOUR DATABASE PASSWORD HERE
 define('DB_PORT', '3306');
 
 function getPDO(): PDO {
@@ -27,9 +27,9 @@ function getPDO(): PDO {
         try {
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
-            // In production, log this instead of displaying it
+            // Production-friendly error
             http_response_code(500);
-            die(json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]));
+            die('Database connection failed. Please contact the administrator.');
         }
     }
 
