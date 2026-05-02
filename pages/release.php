@@ -44,7 +44,7 @@ $query = "
     FROM memorandum_orders m
     LEFT JOIN document_recipients dr ON dr.document_id = m.id 
         AND dr.document_type = 'Memorandum Order'
-    " . ($isAdmin ? "" : "WHERE m.created_by = ?") . "
+    " . ($isAdmin ? "WHERE m.deleted_at IS NULL" : "WHERE m.created_by = ? AND m.deleted_at IS NULL") . "
     GROUP BY m.id
 
     UNION ALL
@@ -65,7 +65,7 @@ $query = "
     FROM special_orders s
     LEFT JOIN document_recipients dr ON dr.document_id = s.id 
         AND dr.document_type = 'Special Order'
-    " . ($isAdmin ? "" : "WHERE s.created_by = ?") . "
+    " . ($isAdmin ? "WHERE s.deleted_at IS NULL" : "WHERE s.created_by = ? AND s.deleted_at IS NULL") . "
     GROUP BY s.id
 
     UNION ALL
@@ -86,7 +86,7 @@ $query = "
     FROM travel_orders t
     LEFT JOIN document_recipients dr ON dr.document_id = t.id 
         AND dr.document_type = 'Travel Order'
-    " . ($isAdmin ? "" : "WHERE t.created_by = ?") . "
+    " . ($isAdmin ? "WHERE t.deleted_at IS NULL" : "WHERE t.created_by = ? AND t.deleted_at IS NULL") . "
     GROUP BY t.id
 
     ORDER BY created_at DESC
@@ -115,6 +115,57 @@ function getRecipientsWithFeedback($pdo, $document_type, $document_id) {
     ");
     $stmt->execute([$document_type, $document_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Ensure deleted_at columns exist (run once)
+try {
+    $pdo->exec("ALTER TABLE memorandum_orders ADD COLUMN IF NOT EXISTS deleted_at DATETIME DEFAULT NULL");
+    $pdo->exec("ALTER TABLE special_orders ADD COLUMN IF NOT EXISTS deleted_at DATETIME DEFAULT NULL");
+    $pdo->exec("ALTER TABLE travel_orders ADD COLUMN IF NOT EXISTS deleted_at DATETIME DEFAULT NULL");
+} catch (PDOException $e) { /* ignore, column may exist */ }
+
+// ── AJAX: trash a released document (only sender/creator may do this) ────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+
+    if ($_POST['action'] === 'trash_release') {
+        $doc_type = $_POST['document_type'] ?? '';
+        $doc_id   = (int)($_POST['document_id'] ?? 0);
+
+        if (!$doc_id || !in_array($doc_type, ['Memorandum Order', 'Special Order', 'Travel Order'])) {
+            echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+            exit;
+        }
+
+        // Map type → table and creator column
+        $tableMap = [
+            'Memorandum Order' => ['memorandum_orders', 'created_by'],
+            'Special Order'    => ['special_orders',    'created_by'],
+            'Travel Order'     => ['travel_orders',     'created_by'],
+        ];
+        [$table, $creatorCol] = $tableMap[$doc_type];
+
+        // Verify the current user is the creator
+        $check = $pdo->prepare("SELECT id FROM `$table` WHERE id = ? AND $creatorCol = ? AND deleted_at IS NULL");
+        $check->execute([$doc_id, $user_id]);
+
+        if (!$check->fetch()) {
+            echo json_encode(['success' => false, 'message' => 'Document not found or you are not the sender.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE `$table` SET deleted_at = NOW() WHERE id = ? AND $creatorCol = ? AND deleted_at IS NULL");
+        $stmt->execute([$doc_id, $user_id]);
+
+        echo json_encode($stmt->rowCount() > 0
+            ? ['success' => true,  'message' => 'Document moved to trash.']
+            : ['success' => false, 'message' => 'Could not move document to trash.']
+        );
+        exit;
+    }
+
+    echo json_encode(['success' => false, 'message' => 'Unknown action.']);
+    exit;
 }
 ?>
 
@@ -276,6 +327,16 @@ function getRecipientsWithFeedback($pdo, $document_type, $document_id) {
                                         Issued: <?= date('M d, Y', strtotime($doc['date_issued'])) ?>
                                     </p>
                                 </div>
+                                <?php if ($doc['sender_email'] === $user_email): ?>
+                                <button onclick="openReleaseDeleteModal(event, <?= $doc['document_id'] ?>, '<?= htmlspecialchars(addslashes($doc['document_type'])) ?>', '<?= htmlspecialchars(addslashes($doc['subject'])) ?>')"
+                                        class="ml-4 flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-crimson-50 text-crimson-700 hover:bg-crimson-100 border border-crimson-200 rounded-lg transition font-secondary">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Delete
+                                </button>
+                                <?php endif; ?>
+                                  
                             </div>
 
                             <!-- Progress Bar -->
@@ -573,3 +634,113 @@ function getRecipientsWithFeedback($pdo, $document_type, $document_id) {
     <script src="../js/sidebar.js"></script>
 </body>
 </html>
+
+<!-- Release Delete Confirmation Modal -->
+<div id="releaseDeleteModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-800 font-main">Move to Trash</h3>
+            <button onclick="closeReleaseDeleteModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+        <div class="px-6 py-6">
+            <div class="flex items-start gap-4">
+                <div class="w-11 h-11 rounded-full bg-crimson-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-crimson-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-700 font-secondary">Are you sure you want to move this document to Trash?</p>
+                    <p id="releaseDeleteModalSubject" class="text-sm font-bold text-gray-900 font-secondary mt-0.5 truncate"></p>
+                    <p class="text-xs text-gray-400 font-secondary mt-2">The document will be hidden from Release Monitoring. You can restore or permanently delete it in Trash.</p>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
+            <button onclick="closeReleaseDeleteModal()"
+                class="px-4 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition font-secondary">
+                Cancel
+            </button>
+            <button id="releaseDeleteConfirmBtn"
+                class="px-4 py-2 text-sm font-semibold bg-crimson-700 text-white rounded-lg hover:bg-crimson-800 transition font-secondary">
+                Move to Trash
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let _releaseDeleteDocId   = null;
+    let _releaseDeleteDocType = null;
+
+    function openReleaseDeleteModal(event, docId, docType, subject) {
+        event.stopPropagation();
+        _releaseDeleteDocId   = docId;
+        _releaseDeleteDocType = docType;
+        document.getElementById('releaseDeleteModalSubject').textContent = subject;
+        const modal = document.getElementById('releaseDeleteModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeReleaseDeleteModal() {
+        const modal = document.getElementById('releaseDeleteModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        _releaseDeleteDocId   = null;
+        _releaseDeleteDocType = null;
+    }
+
+    document.getElementById('releaseDeleteModal').addEventListener('click', function(e) {
+        if (e.target === this) closeReleaseDeleteModal();
+    });
+
+    document.getElementById('releaseDeleteConfirmBtn').addEventListener('click', async function() {
+        if (!_releaseDeleteDocId || !_releaseDeleteDocType) return;
+
+        this.disabled    = true;
+        this.textContent = 'Moving…';
+
+        // Capture before closeReleaseDeleteModal() nulls them
+        const targetId   = parseInt(_releaseDeleteDocId);
+        const targetType = _releaseDeleteDocType;
+
+        try {
+            const fd = new FormData();
+            fd.append('action',        'trash_release');
+            fd.append('document_id',   targetId);
+            fd.append('document_type', targetType);
+
+            const res  = await fetch('', { method: 'POST', body: fd });
+            const data = await res.json();
+
+            if (data.success) {
+                closeReleaseDeleteModal();
+
+                // Animate the matching card out immediately
+                document.querySelectorAll('.release-card').forEach(card => {
+                    try {
+                        const doc = JSON.parse(card.getAttribute('data-document'));
+                        if (parseInt(doc.document_id) === targetId && doc.document_type === targetType) {
+                            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            card.style.opacity    = '0';
+                            card.style.transform  = 'translateX(40px)';
+                            setTimeout(() => card.remove(), 320);
+                        }
+                    } catch(e) {}
+                });
+
+                Swal.fire({ icon: 'success', title: 'Moved to Trash', text: 'Document has been moved to Trash.', timer: 1800, showConfirmButton: false });
+            } else {
+                closeReleaseDeleteModal();
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#AA0003' });
+            }
+        } catch (e) {
+            closeReleaseDeleteModal();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Could not move document to trash.', confirmButtonColor: '#AA0003' });
+        }
+
+        this.disabled    = false;
+        this.textContent = 'Move to Trash';
+    });
+</script>

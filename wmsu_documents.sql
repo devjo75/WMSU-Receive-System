@@ -1,18 +1,25 @@
 -- phpMyAdmin SQL Dump
 -- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
 -- Host: 127.0.0.1
--- Generation Time: May 01, 2026 at 08:16 AM
+-- Generation Time: May 02, 2026 at 03:21 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
+
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `wmsu_documents`
+--
 
 -- --------------------------------------------------------
 
@@ -29,12 +36,19 @@ CREATE TABLE `document_files` (
   `file_path` varchar(500) NOT NULL,
   `mime_type` varchar(100) DEFAULT NULL,
   `file_size` int(10) UNSIGNED DEFAULT NULL,
-  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ocr_text` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `document_files` (`id`, `document_type`, `document_id`, `original_name`, `stored_name`, `file_path`, `mime_type`, `file_size`, `uploaded_at`) VALUES
-(8, 'special_order', 2, '686483316_122182646240470993_7865671668863214793_n.jpg', 'cf13241c288c2fe1bbeeaa311248f31c.jpg', 'uploads/documents/cf13241c288c2fe1bbeeaa311248f31c.jpg', 'image/jpeg', 69482, '2026-04-30 15:56:57'),
-(10, 'travel_order', 2, '596810085_25557492853845413_2827551230665253012_n.jpg', '0004a15954ae9a0f41a7436148bcaa57.jpg', 'uploads/documents/0004a15954ae9a0f41a7436148bcaa57.jpg', 'image/jpeg', 29629, '2026-04-30 16:05:18');
+--
+-- Dumping data for table `document_files`
+--
+
+INSERT INTO `document_files` (`id`, `document_type`, `document_id`, `original_name`, `stored_name`, `file_path`, `mime_type`, `file_size`, `uploaded_at`, `ocr_text`) VALUES
+(8, 'special_order', 2, '686483316_122182646240470993_7865671668863214793_n.jpg', 'cf13241c288c2fe1bbeeaa311248f31c.jpg', 'uploads/documents/cf13241c288c2fe1bbeeaa311248f31c.jpg', 'image/jpeg', 69482, '2026-04-30 15:56:57', NULL),
+(10, 'travel_order', 2, '596810085_25557492853845413_2827551230665253012_n.jpg', '0004a15954ae9a0f41a7436148bcaa57.jpg', 'uploads/documents/0004a15954ae9a0f41a7436148bcaa57.jpg', 'image/jpeg', 29629, '2026-04-30 16:05:18', NULL),
+(11, 'special_order', 3, 'wmsu_background.jpg', 'b6a29b56f8077e5281d620c16d6e5b56.jpg', 'uploads/documents/b6a29b56f8077e5281d620c16d6e5b56.jpg', 'image/jpeg', 142995, '2026-05-02 12:15:38', NULL),
+(12, 'special_order', 5, 'wmsu_background.jpg', '0940bbaeeb7389d871998ebe5b96f75f.jpg', 'uploads/documents/0940bbaeeb7389d871998ebe5b96f75f.jpg', 'image/jpeg', 142995, '2026-05-02 12:18:03', NULL);
 
 -- --------------------------------------------------------
 
@@ -53,11 +67,18 @@ CREATE TABLE `document_history` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `document_history`
+--
+
 INSERT INTO `document_history` (`id`, `document_type`, `document_id`, `document_number`, `action`, `action_by`, `action_details`, `created_at`) VALUES
 (8, 'Memorandum Order', 5, 'MO-2026-001', 'Released', NULL, 'Document released to recipients', '2026-04-30 15:43:21'),
 (9, 'Special Order', 2, 'S0-001', 'Released', NULL, 'Document released to recipients', '2026-04-30 15:56:57'),
 (10, 'Special Order', 2, 'S0-001', 'Received', NULL, 'Document received by sl201101795@wmsu.edu.ph with feedback: alright', '2026-04-30 15:57:19'),
-(12, 'Travel Order', 2, 'IO-2026-001', 'Released', NULL, 'Document released to recipients', '2026-04-30 16:05:18');
+(12, 'Travel Order', 2, 'IO-2026-001', 'Released', NULL, 'Document released to recipients', '2026-04-30 16:05:18'),
+(13, 'Special Order', 3, '123', 'Released', 7, 'Document released to recipients', '2026-05-02 12:15:38'),
+(14, 'Special Order', 3, '123', 'Received', 6, 'Document received by eh202204534@wmsu.edu.ph', '2026-05-02 12:16:44'),
+(15, 'Special Order', 5, '124', 'Released', 6, 'Document released to recipients', '2026-05-02 12:18:03');
 
 -- --------------------------------------------------------
 
@@ -80,13 +101,9 @@ CREATE TABLE `document_recipients` (
   `feedback` text DEFAULT NULL,
   `email_sent` tinyint(1) DEFAULT 0,
   `confirmation_token` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `document_recipients` (`id`, `document_type`, `document_id`, `recipient_id`, `recipient_email`, `recipient_name`, `status`, `token`, `released_at`, `sent_at`, `received_at`, `feedback`, `email_sent`, `confirmation_token`, `created_at`) VALUES
-(8, 'Special Order', 2, 5, 'sl201101795@wmsu.edu.ph', 'Borat', 'Received', NULL, NULL, '2026-04-30 23:57:03', '2026-04-30 23:57:19', 'alright', 0, '3764a5faf16e98b1f73bce14c23ba7e2fe6ef55e975485828f4eeb051591c836', '2026-04-30 15:56:57'),
-(9, 'Travel Order', 1, 4, 'johnmchalesp@gmail.com', 'John Mchales Buenaventura', 'Sent', NULL, NULL, '2026-05-01 00:03:27', NULL, NULL, 0, '59e1553073317b64be31d7642dc824a900565f10e799b37a550029aa93f3cde1', '2026-04-30 16:03:22'),
-(10, 'Travel Order', 2, 5, 'sl201101795@wmsu.edu.ph', 'Borat', 'Sent', NULL, NULL, '2026-05-01 00:05:24', NULL, NULL, 0, '1251d14f9297029103db5755409098d6f976efe6311e343d38bfedf39537e84c', '2026-04-30 16:05:19');
 
 -- --------------------------------------------------------
 
@@ -115,7 +132,8 @@ CREATE TABLE `memorandum_orders` (
   `status` enum('Draft','Released','Received','Cancelled') DEFAULT 'Draft',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `created_by` int(11) DEFAULT NULL
+  `created_by` int(11) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -137,6 +155,14 @@ CREATE TABLE `notifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `notification_type`, `title`, `message`, `document_type`, `document_id`, `is_read`, `read_at`, `created_at`) VALUES
+(11, 6, 'Document Released', 'Document Released: Special Order', 'Document 123 has been released to you by admin@wmsu.edu.ph', 'Special Order', 3, 0, NULL, '2026-05-02 12:15:44'),
+(12, 7, 'Document Released', 'Document Released: Special Order', 'Document 124 has been released to you by eh202204534@wmsu.edu.ph', 'Special Order', 5, 0, NULL, '2026-05-02 12:18:09');
+
 -- --------------------------------------------------------
 
 --
@@ -151,6 +177,10 @@ CREATE TABLE `receivers` (
   `email` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `receivers`
+--
 
 INSERT INTO `receivers` (`id`, `name`, `department`, `role`, `email`, `created_at`) VALUES
 (1, 'MARK CRUZ', 'BSIT', 'FACULTY', NULL, '2026-03-23 11:39:34'),
@@ -180,6 +210,10 @@ CREATE TABLE `recipient_groups` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `recipient_groups`
+--
 
 INSERT INTO `recipient_groups` (`id`, `group_name`, `email`, `department`, `college`, `position`, `category`, `active`, `created_at`, `updated_at`) VALUES
 (1, 'University President', 'president@wmsu.edu.ph', 'Executive Office', '', 'President', 'Executive', 1, '2026-03-17 23:15:33', '2026-03-17 23:15:33'),
@@ -221,11 +255,17 @@ CREATE TABLE `special_orders` (
   `status` enum('Draft','Released','Received','Cancelled') DEFAULT 'Draft',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `created_by` int(11) DEFAULT NULL
+  `created_by` int(11) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `special_orders` (`id`, `so_number`, `document_year`, `document_month`, `concerned_faculty`, `subject`, `date_issued`, `effectivity`, `effectivity_date`, `source_signatory`, `remarks`, `document_file`, `sender_email`, `status`, `created_at`, `updated_at`, `created_by`) VALUES
-(2, 'S0-001', 2026, 'April', 'John Mchales Backbone', 'this is how you do it', '2026-04-30', 'Effective Immediately', NULL, 'unsa mani oi', 'wews', 'uploads/documents/cf13241c288c2fe1bbeeaa311248f31c.jpg', 'sl201101795@wmsu.edu.ph', 'Released', '2026-04-30 15:56:57', '2026-04-30 15:56:57', NULL);
+--
+-- Dumping data for table `special_orders`
+--
+
+INSERT INTO `special_orders` (`id`, `so_number`, `document_year`, `document_month`, `concerned_faculty`, `subject`, `date_issued`, `effectivity`, `effectivity_date`, `source_signatory`, `remarks`, `document_file`, `sender_email`, `status`, `created_at`, `updated_at`, `created_by`, `deleted_at`) VALUES
+(2, 'S0-001', 2026, 'April', 'John Mchales Backbone', 'this is how you do it', '2026-04-30', 'Effective Immediately', NULL, 'unsa mani oi', 'wews', 'uploads/documents/cf13241c288c2fe1bbeeaa311248f31c.jpg', 'sl201101795@wmsu.edu.ph', 'Released', '2026-04-30 15:56:57', '2026-04-30 15:56:57', NULL, NULL),
+(3, '123', 2026, 'May', 'asd', 'asd', '2026-05-02', 'asd', NULL, 'asd', 'asd', 'uploads/documents/b6a29b56f8077e5281d620c16d6e5b56.jpg', 'admin@wmsu.edu.ph', 'Released', '2026-05-02 12:15:38', '2026-05-02 12:17:08', 7, '2026-05-02 20:17:08');
 
 -- --------------------------------------------------------
 
@@ -241,6 +281,10 @@ CREATE TABLE `system_settings` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `updated_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `system_settings`
+--
 
 INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `description`, `updated_at`, `updated_by`) VALUES
 (1, 'site_name', 'WMSU Document Release System', 'System name', '2026-03-17 23:15:33', NULL),
@@ -278,11 +322,16 @@ CREATE TABLE `travel_orders` (
   `status` enum('Draft','Released','Received','Cancelled') DEFAULT 'Draft',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `created_by` int(11) DEFAULT NULL
+  `created_by` int(11) DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `travel_orders` (`id`, `io_number`, `document_year`, `document_month`, `employee_name`, `office`, `subject`, `date_issued`, `duration_and_destination`, `travel_start_date`, `travel_end_date`, `destination`, `fund_assistance`, `source`, `no_partly`, `remarks`, `document_file`, `sender_email`, `status`, `created_at`, `updated_at`, `created_by`) VALUES
-(2, 'IO-2026-001', 2026, 'April', 'Aaron Flores', 'IT Department', 'Bisaya', '2026-04-30', NULL, '2026-05-04', '2026-05-08', 'Pagadian', 0.00, 'unsa mani oi ', NULL, 'Sardani Muslim', 'uploads/documents/0004a15954ae9a0f41a7436148bcaa57.jpg', 'sl201101795@wmsu.edu.ph', 'Released', '2026-04-30 16:05:18', '2026-04-30 16:05:18', NULL);
+--
+-- Dumping data for table `travel_orders`
+--
+
+INSERT INTO `travel_orders` (`id`, `io_number`, `document_year`, `document_month`, `employee_name`, `office`, `subject`, `date_issued`, `duration_and_destination`, `travel_start_date`, `travel_end_date`, `destination`, `fund_assistance`, `source`, `no_partly`, `remarks`, `document_file`, `sender_email`, `status`, `created_at`, `updated_at`, `created_by`, `deleted_at`) VALUES
+(2, 'IO-2026-001', 2026, 'April', 'Aaron Flores', 'IT Department', 'Bisaya', '2026-04-30', NULL, '2026-05-04', '2026-05-08', 'Pagadian', 0.00, 'unsa mani oi ', NULL, 'Sardani Muslim', 'uploads/documents/0004a15954ae9a0f41a7436148bcaa57.jpg', 'sl201101795@wmsu.edu.ph', 'Released', '2026-04-30 16:05:18', '2026-04-30 16:05:18', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -305,19 +354,27 @@ CREATE TABLE `users` (
   `last_login` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `users`
+--
+
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `department`, `position`, `is_active`, `created_at`, `updated_at`, `last_login`) VALUES
-(6, 'JO', 'eh202204534@wmsu.edu.ph', '$2y$10$mJEb0N3K2SGIRYmnMBFg8OUK8roG/lw9dMZwlrWKsrFqwre70yF/a', 'Jolouis Sardani', 'Admin', '', '', 1, '2026-05-01 06:07:50', '2026-05-01 06:08:26', '2026-05-01 14:08:26'),
-(7, 'admin@wmsu.edu.ph', 'admin@wmsu.edu.ph', '$2y$10$zWQa6KYdpazF2GemqSnWiuJo28YMaOobjk3HXRaO4RHQyiWVt5h0q', 'admin', 'Admin', '', '', 1, '2026-05-01 06:09:10', '2026-05-01 06:09:31', '2026-05-01 14:09:31');
-
--- --------------------------------------------------------
+(6, 'JO', 'eh202204534@wmsu.edu.ph', '$2y$10$mJEb0N3K2SGIRYmnMBFg8OUK8roG/lw9dMZwlrWKsrFqwre70yF/a', 'Jolouis Sardani', 'Admin', '', '', 1, '2026-05-01 06:07:50', '2026-05-02 12:17:22', '2026-05-02 20:17:22'),
+(7, 'admin@wmsu.edu.ph', 'admin@wmsu.edu.ph', '$2y$10$zWQa6KYdpazF2GemqSnWiuJo28YMaOobjk3HXRaO4RHQyiWVt5h0q', 'admin', 'Admin', '', '', 1, '2026-05-01 06:09:10', '2026-05-02 12:16:50', '2026-05-02 20:16:50');
 
 --
--- Indexes and AUTO_INCREMENT
+-- Indexes for dumped tables
 --
 
+--
+-- Indexes for table `document_files`
+--
 ALTER TABLE `document_files`
   ADD PRIMARY KEY (`id`);
 
+--
+-- Indexes for table `document_history`
+--
 ALTER TABLE `document_history`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_document` (`document_type`,`document_id`),
@@ -325,6 +382,9 @@ ALTER TABLE `document_history`
   ADD KEY `idx_created_at` (`created_at`),
   ADD KEY `action_by` (`action_by`);
 
+--
+-- Indexes for table `document_recipients`
+--
 ALTER TABLE `document_recipients`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `confirmation_token` (`confirmation_token`),
@@ -335,6 +395,9 @@ ALTER TABLE `document_recipients`
   ADD KEY `idx_confirmation` (`confirmation_token`),
   ADD KEY `idx_document_lookup` (`document_type`,`document_id`,`status`);
 
+--
+-- Indexes for table `memorandum_orders`
+--
 ALTER TABLE `memorandum_orders`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `mo_number` (`mo_number`),
@@ -343,17 +406,26 @@ ALTER TABLE `memorandum_orders`
   ADD KEY `idx_concerned_faculty` (`concerned_faculty`(100)),
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_year_month` (`document_year`,`document_month`),
-  ADD KEY `created_by` (`created_by`),
-  ADD FULLTEXT KEY `ft_search` (`subject`,`concerned_faculty`);
+  ADD KEY `created_by` (`created_by`);
+ALTER TABLE `memorandum_orders` ADD FULLTEXT KEY `ft_search` (`subject`,`concerned_faculty`);
 
+--
+-- Indexes for table `notifications`
+--
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_user` (`user_id`),
   ADD KEY `idx_read` (`is_read`);
 
+--
+-- Indexes for table `receivers`
+--
 ALTER TABLE `receivers`
   ADD PRIMARY KEY (`id`);
 
+--
+-- Indexes for table `recipient_groups`
+--
 ALTER TABLE `recipient_groups`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`),
@@ -361,6 +433,9 @@ ALTER TABLE `recipient_groups`
   ADD KEY `idx_category` (`category`),
   ADD KEY `idx_email` (`email`);
 
+--
+-- Indexes for table `special_orders`
+--
 ALTER TABLE `special_orders`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `so_number` (`so_number`),
@@ -369,14 +444,20 @@ ALTER TABLE `special_orders`
   ADD KEY `idx_concerned_faculty` (`concerned_faculty`(100)),
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_year_month` (`document_year`,`document_month`),
-  ADD KEY `created_by` (`created_by`),
-  ADD FULLTEXT KEY `ft_search` (`subject`,`concerned_faculty`);
+  ADD KEY `created_by` (`created_by`);
+ALTER TABLE `special_orders` ADD FULLTEXT KEY `ft_search` (`subject`,`concerned_faculty`);
 
+--
+-- Indexes for table `system_settings`
+--
 ALTER TABLE `system_settings`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `setting_key` (`setting_key`),
   ADD KEY `updated_by` (`updated_by`);
 
+--
+-- Indexes for table `travel_orders`
+--
 ALTER TABLE `travel_orders`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `io_number` (`io_number`),
@@ -385,9 +466,12 @@ ALTER TABLE `travel_orders`
   ADD KEY `idx_employee` (`employee_name`(100)),
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_year_month` (`document_year`,`document_month`),
-  ADD KEY `created_by` (`created_by`),
-  ADD FULLTEXT KEY `ft_search` (`subject`,`employee_name`,`destination`);
+  ADD KEY `created_by` (`created_by`);
+ALTER TABLE `travel_orders` ADD FULLTEXT KEY `ft_search` (`subject`,`employee_name`,`destination`);
 
+--
+-- Indexes for table `users`
+--
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`),
@@ -395,62 +479,123 @@ ALTER TABLE `users`
   ADD KEY `idx_email` (`email`),
   ADD KEY `idx_role` (`role`);
 
-ALTER TABLE `document_files`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+--
+-- AUTO_INCREMENT for dumped tables
+--
 
+--
+-- AUTO_INCREMENT for table `document_files`
+--
+ALTER TABLE `document_files`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT for table `document_history`
+--
 ALTER TABLE `document_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT for table `document_recipients`
+--
+ALTER TABLE `document_recipients`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
-ALTER TABLE `document_recipients`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
-
+--
+-- AUTO_INCREMENT for table `memorandum_orders`
+--
 ALTER TABLE `memorandum_orders`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
+--
+-- AUTO_INCREMENT for table `notifications`
+--
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
+--
+-- AUTO_INCREMENT for table `receivers`
+--
 ALTER TABLE `receivers`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
+--
+-- AUTO_INCREMENT for table `recipient_groups`
+--
 ALTER TABLE `recipient_groups`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
+--
+-- AUTO_INCREMENT for table `special_orders`
+--
 ALTER TABLE `special_orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
+--
+-- AUTO_INCREMENT for table `system_settings`
+--
 ALTER TABLE `system_settings`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
+--
+-- AUTO_INCREMENT for table `travel_orders`
+--
 ALTER TABLE `travel_orders`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
+--
+-- AUTO_INCREMENT for table `users`
+--
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
--- Foreign key constraints
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `document_history`
+--
 ALTER TABLE `document_history`
   ADD CONSTRAINT `document_history_ibfk_1` FOREIGN KEY (`action_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
+--
+-- Constraints for table `document_recipients`
+--
 ALTER TABLE `document_recipients`
   ADD CONSTRAINT `document_recipients_ibfk_1` FOREIGN KEY (`recipient_id`) REFERENCES `recipient_groups` (`id`) ON DELETE CASCADE;
 
+--
+-- Constraints for table `memorandum_orders`
+--
 ALTER TABLE `memorandum_orders`
   ADD CONSTRAINT `memorandum_orders_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
+--
+-- Constraints for table `notifications`
+--
 ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
+--
+-- Constraints for table `special_orders`
+--
 ALTER TABLE `special_orders`
   ADD CONSTRAINT `special_orders_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
+--
+-- Constraints for table `system_settings`
+--
 ALTER TABLE `system_settings`
   ADD CONSTRAINT `system_settings_ibfk_1` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
+--
+-- Constraints for table `travel_orders`
+--
 ALTER TABLE `travel_orders`
   ADD CONSTRAINT `travel_orders_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
 COMMIT;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

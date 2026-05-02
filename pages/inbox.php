@@ -302,7 +302,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
-                      
+                    
+
                         <div class="flex items-center space-x-3">
                             <div class="hidden sm:block text-right">
                                 <p class="text-sm font-semibold text-gray-800 font-secondary"><?= htmlspecialchars($user_email ?: 'Guest User') ?></p>
@@ -454,17 +455,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                         <!-- Delete button: only available after message is acknowledged -->
                                         <?php if ($doc['status'] === 'Received'): ?>
                                             <button onclick="openDeleteModal(event, <?= $doc['recipient_id'] ?>, '<?= htmlspecialchars(addslashes($doc['sender_email'] ?? 'Unknown'), ENT_QUOTES) ?>')"
-                                                    class="px-3 py-1.5 text-xs font-semibold bg-crimson-50 text-crimson-700 hover:bg-crimson-100 rounded-lg transition font-secondary">
-                                                Delete
-                                            </button>
+                                                    class="px-3 py-1.5 text-xs font-semibold bg-crimson-50 text-crimson-700 hover:bg-crimson-100 rounded-lg transition font-secondary">Delete</button>
                                         <?php else: ?>
-                                            <span title="Acknowledge the document first before deleting"
-                                                  class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-300 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed select-none">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-6a2 2 0 100-4 2 2 0 000 4zm6 4a8 8 0 11-16 0 8 8 0 0116 0z"/>
-                                                </svg>
-                                                Delete
-                                            </span>
+                                            <button disabled title="Acknowledge the document first before deleting"
+                                                    class="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-300 rounded-lg font-secondary cursor-not-allowed">Delete</button>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -631,10 +625,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             this.disabled    = true;
             this.textContent = 'Moving…';
 
+            // Capture ID now — closeDeleteModal() will null it
+            const targetId = _deleteTargetId;
+
             try {
                 const fd = new FormData();
                 fd.append('action', 'trash_message');
-                fd.append('recipient_id', _deleteTargetId);
+                fd.append('recipient_id', targetId);
 
                 const res  = await fetch('', { method: 'POST', body: fd });
                 const data = await res.json();
@@ -642,8 +639,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if (data.success) {
                     closeDeleteModal();
 
-                    // Animate row out
-                    const row = document.querySelector(`.inbox-row[data-id="${_deleteTargetId}"]`);
+                    // Animate row out immediately
+                    const row = document.querySelector(`.inbox-row[data-id="${targetId}"]`);
                     if (row) {
                         row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                         row.style.opacity    = '0';
