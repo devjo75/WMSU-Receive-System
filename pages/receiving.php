@@ -273,9 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Save files to document_files table
-                // NOTE: document_files.document_type must use the lowercase_underscored form
-                // that inbox.php's JOIN produces via LOWER(REPLACE('Memorandum Order',' ','_'))
-                // i.e. 'memorandum_order', 'special_order', 'travel_order'
                 $document_type_file_map = [
                     'memorandum'    => 'memorandum_order',
                     'special_order' => 'special_order',
@@ -350,20 +347,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $token = bin2hex(random_bytes(32));
                         
                         // Insert into document_recipients
-// Insert into document_recipients
-$recipient_stmt = $pdo->prepare("
-    INSERT INTO document_recipients 
-        (document_type, document_id, recipient_id, recipient_email, recipient_name, status, confirmation_token)
-    VALUES (?, ?, ?, ?, ?, 'Pending', ?)
-");
-$recipient_stmt->execute([
-    ucwords(str_replace('_', ' ', $document_type)),
-    $document_id,
-    $receiver['id'],
-    $receiver['email'],
-    $receiver['full_name'],
-    $token
-]);
+                        $recipient_stmt = $pdo->prepare("
+                            INSERT INTO document_recipients 
+                                (document_type, document_id, recipient_id, recipient_email, recipient_name, status, confirmation_token)
+                            VALUES (?, ?, ?, ?, ?, 'Pending', ?)
+                        ");
+                        $recipient_stmt->execute([
+                            ucwords(str_replace('_', ' ', $document_type)),
+                            $document_id,
+                            $receiver['id'],
+                            $receiver['email'],
+                            $receiver['full_name'],
+                            $token
+                        ]);
                         
                         $confirm_url = $base_url . '/acknowledge.php?token=' . urlencode($token) . '&action=confirm';
                         $download_url = $base_url . '/acknowledge.php?token=' . urlencode($token) . '&action=download';
@@ -444,8 +440,8 @@ $recipient_stmt->execute([
                                             </td>
                                         </tr>
                                     </table>
-                                    </td>
-                                    </tr>
+                                    <tr>
+                                    </table>
                                 </table>
                             </body>
                             </html>';
@@ -470,13 +466,13 @@ $recipient_stmt->execute([
                                 INSERT INTO notifications (user_id, notification_type, title, message, document_type, document_id)
                                 VALUES (?, 'Document Released', ?, ?, ?, ?)
                             ");
-$notif_stmt->execute([
-    $receiver['id'], // the actual recipient
-    'Document Released: ' . $document_label,
-    "Document {$document_number} has been released to you by {$sender_name}",
-    $document_label_map[$document_type] ?? $document_label,
-    $document_id
-]);
+                            $notif_stmt->execute([
+                                $receiver['id'],
+                                'Document Released: ' . $document_label,
+                                "Document {$document_number} has been released to you by {$sender_name}",
+                                $document_label_map[$document_type] ?? $document_label,
+                                $document_id
+                            ]);
                             
                         } catch (Exception $e) {
                             $mail_errors[] = "Could not send to {$receiver['full_name']}: " . $e->getMessage();
@@ -718,6 +714,17 @@ $avatar_colors = [
                                         <div id="ocrProgressBar" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
                                     </div>
                                 </div>
+                                <!-- Refresh OCR button (appears when text not extracted) -->
+                                <div id="ocrRetryContainer" class="hidden mt-2">
+                                    <button type="button" id="retryOcrBtn" class="inline-flex items-center gap-1 text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 px-3 py-1.5 rounded-lg font-secondary transition">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                        </svg>
+                                        ⟳ Refresh OCR
+                                    </button>
+                                    <span class="text-xs text-gray-500 ml-2 font-secondary">No text extracted? Click to try again.</span>
+                                </div>
+                            </div>
 
                             <div class="border border-gray-200 rounded-lg p-4">
                                 <p class="text-sm font-semibold text-gray-500 mb-4 font-secondary">
@@ -818,7 +825,7 @@ $avatar_colors = [
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-3">
-                                <button type="submit" name="save_as_draft" value="1"
+                                <button type="submit" name="save_as_draft" value="1" id="draftBtn"
                                     class="flex-1 bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-300 transition duration-200 font-secondary">
                                     Save as Draft
                                 </button>
@@ -1112,11 +1119,28 @@ $avatar_colors = [
             const dataTransfer = new DataTransfer();
             uploadedFiles.forEach(file => dataTransfer.items.add(file));
             fileUpload.files = dataTransfer.files;
+            
+            // Show refresh button if first file is an image and OCR text is empty (not running)
+            const firstFile = uploadedFiles[0];
+            const isImg = firstFile && (firstFile.type === 'image/jpeg' || firstFile.type === 'image/png');
+            const retryContainer = document.getElementById('ocrRetryContainer');
+            if (isImg && !ocrRunning && (!ocrInput.value || ocrInput.value.trim() === '')) {
+                retryContainer.classList.remove('hidden');
+            } else {
+                retryContainer.classList.add('hidden');
+            }
         }
         
         window.removeFile = function(index) {
+            const wasImage = (uploadedFiles[index] && (uploadedFiles[index].type === 'image/jpeg' || uploadedFiles[index].type === 'image/png'));
             uploadedFiles.splice(index, 1);
             displayFiles();
+            if (wasImage && (!uploadedFiles.length || !(uploadedFiles[0] && (uploadedFiles[0].type === 'image/jpeg' || uploadedFiles[0].type === 'image/png')))) {
+                resetOCR();
+                if (currentWorker) { currentWorker.terminate(); currentWorker = null; }
+                ocrRunning = false;
+                lockSubmit(false);
+            }
         };
         
         // Receiver filtering
@@ -1182,8 +1206,11 @@ $avatar_colors = [
         const ocrSpinner    = document.getElementById('ocrSpinner');
         const ocrCheck      = document.getElementById('ocrCheck');
         const submitBtn     = document.getElementById('submitBtn');
+        const draftBtn      = document.getElementById('draftBtn');
         const fileUploadEl  = document.getElementById('fileUpload');
+        const retryBtn      = document.getElementById('retryOcrBtn');
 
+        let currentWorker = null;
         let ocrRunning = false;
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -1193,13 +1220,16 @@ $avatar_colors = [
 
         function lockSubmit(lock) {
             submitBtn.disabled = lock;
+            draftBtn.disabled = lock;
             if (lock) {
                 submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 submitBtn.classList.remove('hover:bg-crimson-800', 'hover:scale-[1.02]', 'active:scale-[0.98]');
+                draftBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 submitBtn.title = 'Please wait — scanning image for text…';
             } else {
                 submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 submitBtn.classList.add('hover:bg-crimson-800', 'hover:scale-[1.02]', 'active:scale-[0.98]');
+                draftBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 submitBtn.title = '';
             }
         }
@@ -1211,15 +1241,18 @@ $avatar_colors = [
             ocrBar.style.width = '0%';
             ocrBar.classList.remove('bg-green-500');
             ocrBar.classList.add('bg-blue-600');
-            ocrStatus.classList.remove('text-green-700');
+            ocrStatus.classList.remove('text-green-700', 'text-red-600');
             ocrStatus.classList.add('text-blue-700');
             ocrStatus.textContent = 'Scanning image for text…';
             ocrSpinner.classList.remove('hidden');
             ocrCheck.classList.add('hidden');
             ocrInput.value = '';
+            // Hide refresh button until needed again
+            const retryContainer = document.getElementById('ocrRetryContainer');
+            if (retryContainer) retryContainer.classList.add('hidden');
         }
 
-        // ── Image pre-processing: scale up + contrast boost ──────────────────
+        // ── Image pre-processing: scale up + contrast + sharpen ──────────────────
         function preprocessImage(file) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -1229,7 +1262,8 @@ $avatar_colors = [
                     canvas.width  = img.width  * scale;
                     canvas.height = img.height * scale;
                     const ctx = canvas.getContext('2d');
-                    ctx.filter = 'contrast(1.5) grayscale(1)';
+                    // Grayscale + contrast + brightness for better OCR
+                    ctx.filter = 'grayscale(1) contrast(1.6) brightness(1.05)';
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     canvas.toBlob(resolve, 'image/png');
                 };
@@ -1237,21 +1271,26 @@ $avatar_colors = [
             });
         }
 
-        // ── Run OCR ───────────────────────────────────────────────────────────
+        // ── Run OCR with improved parameters ──────────────────────────────────
         async function runOCR(file) {
+            if (currentWorker) {
+                try { await currentWorker.terminate(); } catch(e) {}
+                currentWorker = null;
+            }
+            if (ocrRunning) return;
             ocrRunning = true;
             lockSubmit(true);
             resetOCR();
             ocrProgress.classList.remove('hidden');
+            const retryContainer = document.getElementById('ocrRetryContainer');
+            if (retryContainer) retryContainer.classList.add('hidden');
 
             try {
                 const cleaned = await preprocessImage(file);
-
-                // Explicit CDN paths — prevents silent worker-fetch failures
                 const worker = await Tesseract.createWorker('eng', 1, {
-                    workerPath : 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/worker.min.js',
-                    langPath   : 'https://tessdata.projectnaptha.com/4.0.0',
-                    corePath   : 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.0/tesseract-core-simd-lstm.wasm.js',
+                    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/worker.min.js',
+                    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+                    corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.0/tesseract-core-simd-lstm.wasm.js',
                     logger: (m) => {
                         if (m.status === 'recognizing text') {
                             const pct = Math.round((m.progress || 0) * 100);
@@ -1260,9 +1299,17 @@ $avatar_colors = [
                         }
                     }
                 });
+                currentWorker = worker;
+
+                // Improve accuracy
+                await worker.setParameters({
+                    tessedit_pageseg_mode: '6',      // Assume uniform text block
+                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:?!-()\'"',
+                });
 
                 const { data: { text } } = await worker.recognize(cleaned);
                 await worker.terminate();
+                currentWorker = null;
 
                 const extracted = text.trim();
                 ocrInput.value  = extracted;
@@ -1277,29 +1324,35 @@ $avatar_colors = [
                 ocrStatus.classList.add('text-green-700');
                 ocrSpinner.classList.add('hidden');
                 ocrCheck.classList.remove('hidden');
-                ocrStatus.textContent = extracted
-                    ? '✓ Text extracted (' + extracted.length + ' characters) — ready to submit'
-                    : '⚠ No text found in image — you can still submit';
+                if (extracted) {
+                    ocrStatus.textContent = '✓ Text extracted (' + extracted.length + ' characters) — ready to submit';
+                } else {
+                    ocrStatus.textContent = '⚠ No text found in image — you can still submit, or click Refresh OCR';
+                    // Show refresh button because text is empty
+                    if (retryContainer) retryContainer.classList.remove('hidden');
+                }
 
-                // Auto-hide after 2 s
-                setTimeout(() => resetOCR(), 2000);
+                // Auto-hide success message after 3 seconds, but keep refresh button if empty
+                setTimeout(() => {
+                    if (extracted) resetOCR();
+                    // If text is empty, do not auto-hide the progress bar immediately, but keep refresh visible
+                }, 3000);
 
             } catch (err) {
                 console.error('OCR error:', err);
-                ocrStatus.textContent = '⚠ Scan failed — you can still submit without extracted text';
+                ocrStatus.textContent = '⚠ Scan failed — click "Refresh OCR" to try again.';
                 ocrStatus.classList.remove('text-blue-700');
                 ocrStatus.classList.add('text-red-600');
                 ocrInput.value = '';
-                setTimeout(() => resetOCR(), 2500);
+                if (retryContainer) retryContainer.classList.remove('hidden');
             } finally {
                 ocrRunning = false;
                 lockSubmit(false);
             }
         }
 
-        // ── Hook into existing file-change event (runs AFTER displayFiles) ───
+        // ── Hook into file upload change ─────────────────────────────────────
         fileUploadEl.addEventListener('change', async () => {
-            // Small tick so uploadedFiles array is already updated
             await new Promise(r => setTimeout(r, 50));
             const files = fileUploadEl.files;
             if (files.length > 0 && isImage(files[0])) {
@@ -1309,20 +1362,22 @@ $avatar_colors = [
             }
         });
 
-        // ── Also reset OCR when first image file is removed ──────────────────
-        const _origRemove = window.removeFile;
-        window.removeFile = function (index) {
-            const wasImage = isImage(fileUploadEl.files[index]);
-            _origRemove(index);
-            if (index === 0 || wasImage) {
-                resetOCR();
-                if (ocrRunning) { ocrRunning = false; lockSubmit(false); }
-            }
-        };
+        // ── Refresh button handler ───────────────────────────────────────────
+        if (retryBtn) {
+            retryBtn.addEventListener('click', async () => {
+                const files = fileUploadEl.files;
+                if (files.length && isImage(files[0])) {
+                    await runOCR(files[0]);
+                } else {
+                    const retryContainer = document.getElementById('ocrRetryContainer');
+                    if (retryContainer) retryContainer.classList.add('hidden');
+                }
+            });
+        }
 
-        // ── Prevent submit while OCR is running (extra safety) ───────────────
+        // ── Prevent submit while OCR is running ──────────────────────────────
         document.getElementById('receiveForm').addEventListener('submit', (e) => {
-            if (ocrRunning) { e.preventDefault(); return false; }
+            if (ocrRunning) { e.preventDefault(); alert('Please wait for OCR to finish or cancel it.'); return false; }
         });
     })();
     </script>

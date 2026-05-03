@@ -392,7 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <span id="modalProgressPercent" class="font-semibold"></span>
                     </div>
                     <div id="modalProgress" class="h-2 bg-gray-100 rounded-full mb-2 overflow-hidden">
-                        <div class="h-full bg-crimson-600 rounded-full transition-all" style="width: 0%"></div>
+                        <div class="h-full bg-green-500 rounded-full transition-all" style="width: 0%"></div>
                     </div>
                     <div class="flex justify-between text-xs">
                         <span id="modalReceivedCount"></span>
@@ -440,7 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             document.getElementById('modalProgressPercent').textContent = `${percent}%`;
             
             const progressBar = document.getElementById('modalProgress');
-            progressBar.innerHTML = `<div class="h-full bg-crimson-600 rounded-full transition-all" style="width:${percent}%"></div>`;
+            progressBar.innerHTML = `<div class="h-full bg-green-500 rounded-full transition-all" style="width:${percent}%"></div>`;
 
             // Fetch recipients with feedback via AJAX
             try {

@@ -279,7 +279,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         .inbox-row { transition: all 0.2s ease; }
         .inbox-row:hover { transform: translateY(-2px); }
         .status-badge { transition: all 0.2s ease; }
-
     </style>
 </head>
 <body class="bg-gray-100">
@@ -510,7 +509,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         </div>
     </div>
 
-    <!-- Document Modal (unchanged) -->
+    <!-- Document Modal -->
     <div id="documentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
         <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden relative max-h-[90vh] flex flex-col">
             <div class="bg-crimson-700 text-white px-6 py-5 flex items-center justify-between flex-shrink-0">
@@ -562,7 +561,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     <p id="noFilesMsg" class="text-xs text-gray-400 hidden font-secondary">No files attached.</p>
                 </div>
 
-                <!-- OCR / Soft-copy section — shown only when extracted text exists -->
+                <!-- OCR / Soft-copy section — now always visible if a file exists, with warning when missing -->
                 <div id="ocrSection" class="hidden mt-2 mb-4">
                     <div class="flex items-center justify-between mb-2">
                         <p class="text-xs font-semibold text-blue-700 font-secondary uppercase tracking-wide flex items-center gap-1">
@@ -571,14 +570,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             </svg>
                             Scanned Text (Soft Copy)
                         </p>
-                        <div class="flex gap-2">
-                            <button onclick="openOcrPDF()" class="flex items-center gap-1 text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-secondary">
+                        <div class="flex gap-2" id="ocrPdfButtons">
+                            <button id="openOcrPdfBtn" onclick="openOcrPDF()" class="flex items-center gap-1 text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-secondary">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                 </svg>
                                 Open PDF
                             </button>
-                            <button onclick="downloadOcrPDF()" class="flex items-center gap-1 text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-secondary">
+                            <button id="downloadOcrPdfBtn" onclick="downloadOcrPDF()" class="flex items-center gap-1 text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-secondary">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                 </svg>
@@ -611,7 +610,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         let _deleteTargetId  = null;
 
         function openDeleteModal(event, recipientId, senderEmail) {
-            event.stopPropagation(); // don't open the document modal
+            event.stopPropagation();
             _deleteTargetId = recipientId;
             document.getElementById('deleteModalSender').textContent = senderEmail;
             const modal = document.getElementById('deleteModal');
@@ -636,7 +635,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             this.disabled    = true;
             this.textContent = 'Moving…';
 
-            // Capture ID now — closeDeleteModal() will null it
             const targetId = _deleteTargetId;
 
             try {
@@ -650,7 +648,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if (data.success) {
                     closeDeleteModal();
 
-                    // Animate row out immediately
                     const row = document.querySelector(`.inbox-row[data-id="${targetId}"]`);
                     if (row) {
                         row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -660,7 +657,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             row.remove();
                             filterAndSortFn();
 
-                            // Bump trash badge
                             const badge = document.querySelector('a[href="trash.php"] span.bg-gray-400');
                             if (badge) {
                                 badge.textContent = parseInt(badge.textContent || '0') + 1;
@@ -735,7 +731,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             if (currentDocument.files && currentDocument.files.length > 0) {
                 noFilesMsg.classList.add('hidden');
-                currentDocument.files.forEach(f => {
+                let hasValidOcr = false;
+                currentDocument.files.forEach((f, idx) => {
                     const a = document.createElement('a');
                     let filePath = f.path.replace(/^\/+/, '');
                     a.href   = appBase + filePath;
@@ -751,14 +748,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         </svg>`;
                     filesContainer.appendChild(a);
 
-                    // Show OCR section for the first file that has extracted text
-                    if (f.ocr_text && f.ocr_text.trim() && ocrTextBox.textContent.trim() === '') {
-                        ocrTextBox.textContent = f.ocr_text.trim();
+                    // Use the first image's OCR text, show warning if missing
+                    if (idx === 0 && f.name.match(/\.(jpe?g|png)$/i)) {
+                        if (f.ocr_text && f.ocr_text.trim()) {
+                            ocrTextBox.textContent = f.ocr_text.trim();
+                            hasValidOcr = true;
+                        } else {
+                            ocrTextBox.textContent = '⚠ No text was extracted from this image. The sender may have submitted the document before OCR completed, or the image quality was insufficient. PDF generation is disabled.';
+                            ocrTextBox.classList.add('text-red-700', 'bg-red-50', 'border-red-200');
+                            // Disable PDF buttons
+                            const openBtn = document.getElementById('openOcrPdfBtn');
+                            const downBtn = document.getElementById('downloadOcrPdfBtn');
+                            if (openBtn) openBtn.disabled = true;
+                            if (downBtn) downBtn.disabled = true;
+                            if (openBtn) openBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            if (downBtn) downBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            hasValidOcr = false;
+                        }
+                        ocrSection.classList.remove('hidden');
+                    } else if (idx === 0 && !f.name.match(/\.(jpe?g|png)$/i)) {
+                        // First file is not an image -> no OCR possible
+                        ocrTextBox.textContent = 'The attached document is not an image (PDF/DOC). No scanned text available.';
+                        ocrTextBox.classList.add('text-gray-600', 'bg-gray-100', 'border-gray-300');
+                        const openBtn = document.getElementById('openOcrPdfBtn');
+                        const downBtn = document.getElementById('downloadOcrPdfBtn');
+                        if (openBtn) openBtn.disabled = true;
+                        if (downBtn) downBtn.disabled = true;
+                        if (openBtn) openBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        if (downBtn) downBtn.classList.add('opacity-50', 'cursor-not-allowed');
                         ocrSection.classList.remove('hidden');
                     }
                 });
+                // If we displayed OCR but have valid text, ensure buttons are enabled
+                if (hasValidOcr) {
+                    const openBtn = document.getElementById('openOcrPdfBtn');
+                    const downBtn = document.getElementById('downloadOcrPdfBtn');
+                    if (openBtn) openBtn.disabled = false;
+                    if (downBtn) downBtn.disabled = false;
+                    if (openBtn) openBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    if (downBtn) downBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    ocrTextBox.classList.remove('text-red-700', 'bg-red-50', 'border-red-200');
+                }
             } else {
                 noFilesMsg.classList.remove('hidden');
+                ocrSection.classList.add('hidden');
             }
             
             let senderName = currentDocument.sender.split('@')[0];
@@ -821,8 +854,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             currentDocument = null;
         }
         
-        // document modal backdrop is intentionally non-dismissible
-        
         // ── Search, Filter & Sort ─────────────────────────────────────────────
         let filterAndSortFn = () => {};
 
@@ -877,7 +908,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 resetBtn.classList.toggle('hidden', !(q || sf || tf || so !== 'date-desc'));
             }
 
-            filterAndSortFn = filterAndSort; // expose for trash button
+            filterAndSortFn = filterAndSort;
 
             function resetAll() {
                 searchEl.value = ''; statusEl.value = ''; typeEl.value = ''; sortEl.value = 'date-desc';
@@ -899,11 +930,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <!-- jsPDF for soft-copy PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
-    // ── Shared PDF builder ────────────────────────────────────────────────────
+    // ── Shared PDF builder (only called when valid OCR text exists) ──────────
     function buildOcrPDF() {
         if (!currentDocument) return null;
         const rawText = document.getElementById('ocrTextBox').textContent.trim();
-        if (!rawText) return null;
+        // If the warning message is present, do not generate PDF
+        if (!rawText || rawText.startsWith('⚠') || rawText.includes('No text was extracted')) return null;
 
         const { jsPDF } = window.jspdf;
         const doc     = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -923,7 +955,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         drawBorder();
 
-        // ── Header band ───────────────────────────────────────────────────────
+        // Header band
         doc.setFillColor(170, 0, 3);
         doc.rect(margin, y, usableW, 18, 'F');
         doc.setTextColor(255, 255, 255);
@@ -940,7 +972,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         doc.line(margin, y, margin + usableW, y);
         y += 6;
 
-        // ── Document metadata table ───────────────────────────────────────────
+        // Document metadata table
         const details = [
             ['Document Type',    currentDocument.type     || 'N/A'],
             ['Document No.',     currentDocument.number   || 'N/A'],
@@ -971,7 +1003,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         });
         y += 6;
 
-        // ── Scanned text section ──────────────────────────────────────────────
+        // Scanned text section
         checkY(14);
         doc.setFillColor(219, 234, 254);
         doc.rect(margin, y, usableW, 10, 'F');
@@ -986,7 +1018,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         textLines.forEach(line => { checkY(6); doc.text(line, margin + 3, y); y += 5.2; });
         y += 8;
 
-        // ── Footer ────────────────────────────────────────────────────────────
+        // Footer
         checkY(12);
         doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
         doc.line(margin, y, margin + usableW, y); y += 5;
@@ -995,7 +1027,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         doc.text('Generated by WMSU Document Management System on ' + now, pageW / 2, y + 4, { align: 'center' });
         doc.text('This is a system-generated soft copy extracted from an uploaded image via OCR.', pageW / 2, y + 8.5, { align: 'center' });
 
-        // Page numbers
         const total = doc.internal.getNumberOfPages();
         for (let p = 1; p <= total; p++) {
             doc.setPage(p);
@@ -1014,7 +1045,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     function openOcrPDF() {
         const doc = buildOcrPDF();
-        if (!doc) { alert('No scanned text available to generate PDF.'); return; }
+        if (!doc) { alert('No valid scanned text available to generate PDF.'); return; }
         const blob = doc.output('blob');
         const url  = URL.createObjectURL(blob);
         window.open(url, '_blank');
@@ -1022,7 +1053,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     function downloadOcrPDF() {
         const doc = buildOcrPDF();
-        if (!doc) { alert('No scanned text available to generate PDF.'); return; }
+        if (!doc) { alert('No valid scanned text available to generate PDF.'); return; }
         doc.save(safeFilename());
     }
     </script>
