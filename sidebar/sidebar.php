@@ -4,7 +4,6 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // BASE PATH (IMPORTANT)
-// Dynamically detect the app's subfolder so links work on any host/subdirectory.
 $_app_root = rtrim(str_replace('\\', '/', realpath(__DIR__ . '/..')), '/');
 $_doc_root = rtrim(str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])), '/');
 $_rel = str_replace($_doc_root, '', $_app_root);
@@ -87,58 +86,38 @@ function inboxNavLink($href, $matchPage) {
         </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="px-4 py-6 flex-1">
+    <!-- Navigation (Scrollable if menu is long) -->
+    <nav class="px-4 py-6 flex-1 overflow-y-auto">
         <ul class="space-y-2">
-
-            <!-- DASHBOARD -->
-            <li>
-                <?= navLink($base . 'dashboard/dashboard.php', 'fa-house', 'Dashboard', 'dashboard.php', 'dashboard') ?>
-            </li>
-
-            <!-- RECEIVING -->
-            <li>
-                <?= navLink($base . 'pages/receiving.php', 'fa-receipt', 'Receiving', 'receiving.php') ?>
-            </li>
-
-            <!-- INBOX -->
-            <li>
-                <?= inboxNavLink($base . 'pages/inbox.php', 'inbox.php') ?>
-            </li>
-
-            <!-- RELEASE -->
-            <li>
-                <?= navLink($base . 'pages/release.php', 'fa-paper-plane', 'Release', 'release.php') ?>
-            </li>
-
-            <!-- USER MANAGEMENT -->
-           <?= navLink($base . 'pages/user_management.php', 'fa-users', 'User Management', 'user_management.php') ?>
-
-            <!-- TRASH -->
-            <li>
-                <?= navLink($base . 'pages/trash.php', 'fa-trash-can', 'Trash', 'trash.php') ?>
-            </li>
-
+            <li><?= navLink($base . 'dashboard/dashboard.php', 'fa-house', 'Dashboard', 'dashboard.php', 'dashboard') ?></li>
+            <li><?= navLink($base . 'pages/receiving.php', 'fa-receipt', 'Receiving', 'receiving.php') ?></li>
+            <li><?= inboxNavLink($base . 'pages/inbox.php', 'inbox.php') ?></li>
+            <li><?= navLink($base . 'pages/release.php', 'fa-paper-plane', 'Release', 'release.php') ?></li>
+            <li><?= navLink($base . 'pages/user_management.php', 'fa-users', 'User Management', 'user_management.php') ?></li>
+            <li><?= navLink($base . 'pages/trash.php', 'fa-trash-can', 'Trash', 'trash.php') ?></li>
         </ul>
     </nav>
 
-    <hr class="my-6 border-red-700">
+    <!-- FOOTER SECTION (User info + Logout) -->
+    <div class="px-4 pb-8"> <!-- Added pb-8 for significant bottom space -->
+        <hr class="mb-6 border-red-700">
+        
+        <!-- USER INFO -->
+        <div class="px-4 py-3 mb-2 bg-red-800/50 rounded-lg">
+            <p class="text-xs text-red-300 mb-1">Logged in as</p>
+            <p class="text-sm font-semibold truncate">
+                <?= htmlspecialchars($_SESSION['user_email'] ?? 'Unknown') ?>
+            </p>
+            <p class="text-xs text-red-300 capitalize">
+                <?= htmlspecialchars($_SESSION['user_role'] ?? 'viewer') ?>
+            </p>
+        </div>
 
-    <!-- USER INFO -->
-    <div class="px-4 py-3 mb-3 bg-red-800 rounded-lg">
-        <p class="text-xs text-red-300 mb-1">Logged in as</p>
-        <p class="text-sm font-semibold truncate">
-            <?= htmlspecialchars($_SESSION['user_email'] ?? 'Unknown') ?>
-        </p>
-        <p class="text-xs text-red-300 capitalize">
-            <?= htmlspecialchars($_SESSION['user_role'] ?? 'viewer') ?>
-        </p>
+        <!-- LOGOUT -->
+        <a href="<?= $base ?>logout.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-red-700 transition-colors text-red-100">
+            <span class="mr-3"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+        </a>
     </div>
-
-    <!-- LOGOUT -->
-    <a href="<?= $base ?>logout.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-red-800 transition-colors">
-        <span class="mr-3"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
-    </a>
 </aside>
 
 <!-- FONT AWESOME -->
