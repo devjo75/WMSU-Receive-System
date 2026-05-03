@@ -79,9 +79,12 @@ function inboxNavLink($href, $matchPage) {
 <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-red-900 text-white flex flex-col justify-between shadow-2xl z-40 -translate-x-full lg:translate-x-0 transition-transform duration-300">
 
     <!-- Branding -->
-    <div class="bg-red-800 px-6 py-6 border-b border-red-700">
-        <h1 class="text-2xl font-bold">WMSU</h1>
-        <p class="text-xs text-red-300 mt-1">Document Management</p>
+    <div class="bg-red-800 px-6 py-6 border-b border-red-700 flex items-center gap-4">
+        <img src="<?= $base ?>logo.png" alt="WMSU Logo" class="h-12 w-12 object-contain">
+        <div>
+            <h1 class="text-2xl font-bold">WMSU</h1>
+            <p class="text-xs text-red-300 mt-1">Document Management</p>
+        </div>
     </div>
 
     <!-- Navigation -->

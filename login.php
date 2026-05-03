@@ -151,11 +151,8 @@ $remembered_email = $_COOKIE['remember_email'] ?? '';
 
             <!-- Header -->
             <div class="bg-crimson-700 px-8 py-10 text-center">
-                <div class="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <svg class="w-10 h-10 text-crimson-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
+                <div class="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                    <img src="logo.png" alt="WMSU Logo" class="w-20 h-20">
                 </div>
                 <h1 class="text-3xl font-bold text-white font-main">Login</h1>
                 <p class="text-crimson-100 mt-2 font-secondary">Sign in to continue</p>
