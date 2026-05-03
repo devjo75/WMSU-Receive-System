@@ -5,6 +5,12 @@ require_once '../config/db.php';
 
 $pdo = getPDO();
 
+// Admin-only page
+if (!is_admin()) {
+    header('Location: ../dashboard/dashboard.php?reason=unauthorized');
+    exit;
+}
+
 function mapRoleForReceiver(string $role): string {
     $map = ['Admin' => 'ADMIN', 'Staff' => 'STAFF', 'Faculty' => 'FACULTY', 'Employee' => 'STAFF'];
     return $map[$role] ?? 'STAFF';

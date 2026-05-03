@@ -93,7 +93,9 @@ function inboxNavLink($href, $matchPage) {
             <li><?= navLink($base . 'pages/receiving.php', 'fa-receipt', 'Receiving', 'receiving.php') ?></li>
             <li><?= inboxNavLink($base . 'pages/inbox.php', 'inbox.php') ?></li>
             <li><?= navLink($base . 'pages/release.php', 'fa-paper-plane', 'Release', 'release.php') ?></li>
+            <?php if (is_admin()): ?>
             <li><?= navLink($base . 'pages/user_management.php', 'fa-users', 'User Management', 'user_management.php') ?></li>
+            <?php endif; ?>
             <li><?= navLink($base . 'pages/trash.php', 'fa-trash-can', 'Trash', 'trash.php') ?></li>
         </ul>
     </nav>
