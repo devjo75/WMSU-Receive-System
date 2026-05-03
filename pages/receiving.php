@@ -146,6 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest = UPLOAD_DIR . $stored_name;
                 
                 if (move_uploaded_file($_FILES['fileUpload']['tmp_name'][$i], $dest)) {
+                    $is_image = in_array($mime, ['image/jpeg', 'image/png']);
                     $saved_files[] = [
                         'original_name' => $_FILES['fileUpload']['name'][$i],
                         'stored_name' => $stored_name,
@@ -153,6 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'file_path' => 'uploads/documents/' . $stored_name,
                         'mime' => $mime,
                         'size' => $size,
+                        'ocr_text' => ($is_image && $i === 0) ? (trim($_POST['ocr_text'] ?? '') ?: null) : null,
                     ];
                 } else {
                     $file_errors[] = 'Failed to save: ' . $_FILES['fileUpload']['name'][$i];
@@ -283,8 +285,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($saved_files)) {
                     $file_stmt = $pdo->prepare("
                         INSERT INTO document_files 
-                            (document_type, document_id, original_name, stored_name, file_path, mime_type, file_size)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                            (document_type, document_id, original_name, stored_name, file_path, mime_type, file_size, ocr_text)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     
                     foreach ($saved_files as $f) {
@@ -296,6 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $f['file_path'],
                             $f['mime'],
                             $f['size'],
+                            $f['ocr_text'] ?? null,
                         ]);
                     }
                 }
@@ -695,7 +698,26 @@ $avatar_colors = [
                                     </label>
                                 </div>
                                 <div id="fileList" class="mt-3 space-y-2"></div>
-                            </div>
+
+                                <!-- Hidden OCR text submitted with form -->
+                                <input type="hidden" id="ocr_text_input" name="ocr_text">
+
+                                <!-- OCR Progress (shown only when an image is uploaded) -->
+                                <div id="ocrProgress" class="hidden mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <svg id="ocrSpinner" class="w-4 h-4 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                        </svg>
+                                        <svg id="ocrCheck" class="hidden w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        <span id="ocrStatusText" class="text-xs font-semibold font-secondary text-blue-700">Scanning image for text...</span>
+                                    </div>
+                                    <div class="w-full bg-blue-200 rounded-full h-1.5">
+                                        <div id="ocrProgressBar" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
+                                    </div>
+                                </div>
 
                             <div class="border border-gray-200 rounded-lg p-4">
                                 <p class="text-sm font-semibold text-gray-500 mb-4 font-secondary">
@@ -1148,5 +1170,161 @@ $avatar_colors = [
         });
     </script>
     <script src="../js/sidebar.js"></script>
+
+    <!-- Tesseract.js OCR with explicit stable CDN paths -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+    <script>
+    (function () {
+        const ocrInput      = document.getElementById('ocr_text_input');
+        const ocrProgress   = document.getElementById('ocrProgress');
+        const ocrBar        = document.getElementById('ocrProgressBar');
+        const ocrStatus     = document.getElementById('ocrStatusText');
+        const ocrSpinner    = document.getElementById('ocrSpinner');
+        const ocrCheck      = document.getElementById('ocrCheck');
+        const submitBtn     = document.getElementById('submitBtn');
+        const fileUploadEl  = document.getElementById('fileUpload');
+
+        let ocrRunning = false;
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+        function isImage(file) {
+            return file && (file.type === 'image/jpeg' || file.type === 'image/png');
+        }
+
+        function lockSubmit(lock) {
+            submitBtn.disabled = lock;
+            if (lock) {
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                submitBtn.classList.remove('hover:bg-crimson-800', 'hover:scale-[1.02]', 'active:scale-[0.98]');
+                submitBtn.title = 'Please wait — scanning image for text…';
+            } else {
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitBtn.classList.add('hover:bg-crimson-800', 'hover:scale-[1.02]', 'active:scale-[0.98]');
+                submitBtn.title = '';
+            }
+        }
+
+        function resetOCR() {
+            ocrProgress.classList.add('hidden');
+            ocrProgress.classList.remove('bg-green-50', 'border-green-200');
+            ocrProgress.classList.add('bg-blue-50', 'border-blue-200');
+            ocrBar.style.width = '0%';
+            ocrBar.classList.remove('bg-green-500');
+            ocrBar.classList.add('bg-blue-600');
+            ocrStatus.classList.remove('text-green-700');
+            ocrStatus.classList.add('text-blue-700');
+            ocrStatus.textContent = 'Scanning image for text…';
+            ocrSpinner.classList.remove('hidden');
+            ocrCheck.classList.add('hidden');
+            ocrInput.value = '';
+        }
+
+        // ── Image pre-processing: scale up + contrast boost ──────────────────
+        function preprocessImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const scale  = Math.max(1, 1600 / img.width);
+                    const canvas = document.createElement('canvas');
+                    canvas.width  = img.width  * scale;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.filter = 'contrast(1.5) grayscale(1)';
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob(resolve, 'image/png');
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // ── Run OCR ───────────────────────────────────────────────────────────
+        async function runOCR(file) {
+            ocrRunning = true;
+            lockSubmit(true);
+            resetOCR();
+            ocrProgress.classList.remove('hidden');
+
+            try {
+                const cleaned = await preprocessImage(file);
+
+                // Explicit CDN paths — prevents silent worker-fetch failures
+                const worker = await Tesseract.createWorker('eng', 1, {
+                    workerPath : 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/worker.min.js',
+                    langPath   : 'https://tessdata.projectnaptha.com/4.0.0',
+                    corePath   : 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.0/tesseract-core-simd-lstm.wasm.js',
+                    logger: (m) => {
+                        if (m.status === 'recognizing text') {
+                            const pct = Math.round((m.progress || 0) * 100);
+                            ocrBar.style.width = pct + '%';
+                            ocrStatus.textContent = 'Scanning… ' + pct + '%';
+                        }
+                    }
+                });
+
+                const { data: { text } } = await worker.recognize(cleaned);
+                await worker.terminate();
+
+                const extracted = text.trim();
+                ocrInput.value  = extracted;
+
+                // ── Success state ─────────────────────────────────────────────
+                ocrBar.style.width = '100%';
+                ocrBar.classList.remove('bg-blue-600');
+                ocrBar.classList.add('bg-green-500');
+                ocrProgress.classList.remove('bg-blue-50', 'border-blue-200');
+                ocrProgress.classList.add('bg-green-50', 'border-green-200');
+                ocrStatus.classList.remove('text-blue-700');
+                ocrStatus.classList.add('text-green-700');
+                ocrSpinner.classList.add('hidden');
+                ocrCheck.classList.remove('hidden');
+                ocrStatus.textContent = extracted
+                    ? '✓ Text extracted (' + extracted.length + ' characters) — ready to submit'
+                    : '⚠ No text found in image — you can still submit';
+
+                // Auto-hide after 2 s
+                setTimeout(() => resetOCR(), 2000);
+
+            } catch (err) {
+                console.error('OCR error:', err);
+                ocrStatus.textContent = '⚠ Scan failed — you can still submit without extracted text';
+                ocrStatus.classList.remove('text-blue-700');
+                ocrStatus.classList.add('text-red-600');
+                ocrInput.value = '';
+                setTimeout(() => resetOCR(), 2500);
+            } finally {
+                ocrRunning = false;
+                lockSubmit(false);
+            }
+        }
+
+        // ── Hook into existing file-change event (runs AFTER displayFiles) ───
+        fileUploadEl.addEventListener('change', async () => {
+            // Small tick so uploadedFiles array is already updated
+            await new Promise(r => setTimeout(r, 50));
+            const files = fileUploadEl.files;
+            if (files.length > 0 && isImage(files[0])) {
+                await runOCR(files[0]);
+            } else {
+                resetOCR();
+            }
+        });
+
+        // ── Also reset OCR when first image file is removed ──────────────────
+        const _origRemove = window.removeFile;
+        window.removeFile = function (index) {
+            const wasImage = isImage(fileUploadEl.files[index]);
+            _origRemove(index);
+            if (index === 0 || wasImage) {
+                resetOCR();
+                if (ocrRunning) { ocrRunning = false; lockSubmit(false); }
+            }
+        };
+
+        // ── Prevent submit while OCR is running (extra safety) ───────────────
+        document.getElementById('receiveForm').addEventListener('submit', (e) => {
+            if (ocrRunning) { e.preventDefault(); return false; }
+        });
+    })();
+    </script>
 </body>
 </html>

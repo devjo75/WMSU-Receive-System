@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 02, 2026 at 03:21 PM
+-- Generation Time: May 03, 2026 at 07:16 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -48,7 +48,9 @@ INSERT INTO `document_files` (`id`, `document_type`, `document_id`, `original_na
 (8, 'special_order', 2, '686483316_122182646240470993_7865671668863214793_n.jpg', 'cf13241c288c2fe1bbeeaa311248f31c.jpg', 'uploads/documents/cf13241c288c2fe1bbeeaa311248f31c.jpg', 'image/jpeg', 69482, '2026-04-30 15:56:57', NULL),
 (10, 'travel_order', 2, '596810085_25557492853845413_2827551230665253012_n.jpg', '0004a15954ae9a0f41a7436148bcaa57.jpg', 'uploads/documents/0004a15954ae9a0f41a7436148bcaa57.jpg', 'image/jpeg', 29629, '2026-04-30 16:05:18', NULL),
 (11, 'special_order', 3, 'wmsu_background.jpg', 'b6a29b56f8077e5281d620c16d6e5b56.jpg', 'uploads/documents/b6a29b56f8077e5281d620c16d6e5b56.jpg', 'image/jpeg', 142995, '2026-05-02 12:15:38', NULL),
-(12, 'special_order', 5, 'wmsu_background.jpg', '0940bbaeeb7389d871998ebe5b96f75f.jpg', 'uploads/documents/0940bbaeeb7389d871998ebe5b96f75f.jpg', 'image/jpeg', 142995, '2026-05-02 12:18:03', NULL);
+(12, 'special_order', 5, 'wmsu_background.jpg', '0940bbaeeb7389d871998ebe5b96f75f.jpg', 'uploads/documents/0940bbaeeb7389d871998ebe5b96f75f.jpg', 'image/jpeg', 142995, '2026-05-02 12:18:03', NULL),
+(13, 'special_order', 7, 'logo.png', '7defc32a83fadef6414c054d98447ff3.png', 'uploads/documents/7defc32a83fadef6414c054d98447ff3.png', 'image/png', 17670, '2026-05-03 03:36:33', NULL),
+(14, 'special_order', 8, 'logo.png', '2adc82e83261770419000aba5e82e9f4.png', 'uploads/documents/2adc82e83261770419000aba5e82e9f4.png', 'image/png', 17670, '2026-05-03 04:14:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -78,7 +80,10 @@ INSERT INTO `document_history` (`id`, `document_type`, `document_id`, `document_
 (12, 'Travel Order', 2, 'IO-2026-001', 'Released', NULL, 'Document released to recipients', '2026-04-30 16:05:18'),
 (13, 'Special Order', 3, '123', 'Released', 7, 'Document released to recipients', '2026-05-02 12:15:38'),
 (14, 'Special Order', 3, '123', 'Received', 6, 'Document received by eh202204534@wmsu.edu.ph', '2026-05-02 12:16:44'),
-(15, 'Special Order', 5, '124', 'Released', 6, 'Document released to recipients', '2026-05-02 12:18:03');
+(15, 'Special Order', 5, '124', 'Released', 6, 'Document released to recipients', '2026-05-02 12:18:03'),
+(16, 'Special Order', 7, '123', 'Released', 7, 'Document released to recipients', '2026-05-03 03:36:33'),
+(17, 'Special Order', 7, '', 'Received', 6, 'Document received by eh202204534@wmsu.edu.ph', '2026-05-03 03:38:25'),
+(18, 'Special Order', 8, '123', 'Released', 7, 'Document released to recipients', '2026-05-03 04:14:59');
 
 -- --------------------------------------------------------
 
@@ -104,6 +109,13 @@ CREATE TABLE `document_recipients` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `document_recipients`
+--
+
+INSERT INTO `document_recipients` (`id`, `document_type`, `document_id`, `recipient_id`, `recipient_email`, `recipient_name`, `status`, `token`, `released_at`, `sent_at`, `received_at`, `feedback`, `email_sent`, `confirmation_token`, `created_at`, `deleted_at`) VALUES
+(14, 'Special Order', 8, 6, 'eh202204534@wmsu.edu.ph', 'Jolouis Sardani', 'Sent', NULL, NULL, '2026-05-03 12:15:04', NULL, NULL, 0, 'd960816529567018f537c8cfdcf6f6beffe217c3d9507348d4da2f2ef89fed90', '2026-05-03 04:14:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -161,7 +173,9 @@ CREATE TABLE `notifications` (
 
 INSERT INTO `notifications` (`id`, `user_id`, `notification_type`, `title`, `message`, `document_type`, `document_id`, `is_read`, `read_at`, `created_at`) VALUES
 (11, 6, 'Document Released', 'Document Released: Special Order', 'Document 123 has been released to you by admin@wmsu.edu.ph', 'Special Order', 3, 0, NULL, '2026-05-02 12:15:44'),
-(12, 7, 'Document Released', 'Document Released: Special Order', 'Document 124 has been released to you by eh202204534@wmsu.edu.ph', 'Special Order', 5, 0, NULL, '2026-05-02 12:18:09');
+(12, 7, 'Document Released', 'Document Released: Special Order', 'Document 124 has been released to you by eh202204534@wmsu.edu.ph', 'Special Order', 5, 0, NULL, '2026-05-02 12:18:09'),
+(13, 6, 'Document Released', 'Document Released: Special Order', 'Document 123 has been released to you by admin@wmsu.edu.ph', 'Special Order', 7, 0, NULL, '2026-05-03 03:36:39'),
+(14, 6, 'Document Released', 'Document Released: Special Order', 'Document 123 has been released to you by admin@wmsu.edu.ph', 'Special Order', 8, 0, NULL, '2026-05-03 04:15:04');
 
 -- --------------------------------------------------------
 
@@ -264,8 +278,7 @@ CREATE TABLE `special_orders` (
 --
 
 INSERT INTO `special_orders` (`id`, `so_number`, `document_year`, `document_month`, `concerned_faculty`, `subject`, `date_issued`, `effectivity`, `effectivity_date`, `source_signatory`, `remarks`, `document_file`, `sender_email`, `status`, `created_at`, `updated_at`, `created_by`, `deleted_at`) VALUES
-(2, 'S0-001', 2026, 'April', 'John Mchales Backbone', 'this is how you do it', '2026-04-30', 'Effective Immediately', NULL, 'unsa mani oi', 'wews', 'uploads/documents/cf13241c288c2fe1bbeeaa311248f31c.jpg', 'sl201101795@wmsu.edu.ph', 'Released', '2026-04-30 15:56:57', '2026-04-30 15:56:57', NULL, NULL),
-(3, '123', 2026, 'May', 'asd', 'asd', '2026-05-02', 'asd', NULL, 'asd', 'asd', 'uploads/documents/b6a29b56f8077e5281d620c16d6e5b56.jpg', 'admin@wmsu.edu.ph', 'Released', '2026-05-02 12:15:38', '2026-05-02 12:17:08', 7, '2026-05-02 20:17:08');
+(8, '123', 2026, 'May', 'asd', 'asd', '2026-05-03', 'asd', NULL, 'asd', 'asd', 'uploads/documents/2adc82e83261770419000aba5e82e9f4.png', 'admin@wmsu.edu.ph', 'Released', '2026-05-03 04:14:59', '2026-05-03 04:14:59', 7, NULL);
 
 -- --------------------------------------------------------
 
@@ -359,8 +372,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `department`, `position`, `is_active`, `created_at`, `updated_at`, `last_login`) VALUES
-(6, 'JO', 'eh202204534@wmsu.edu.ph', '$2y$10$mJEb0N3K2SGIRYmnMBFg8OUK8roG/lw9dMZwlrWKsrFqwre70yF/a', 'Jolouis Sardani', 'Admin', '', '', 1, '2026-05-01 06:07:50', '2026-05-02 12:17:22', '2026-05-02 20:17:22'),
-(7, 'admin@wmsu.edu.ph', 'admin@wmsu.edu.ph', '$2y$10$zWQa6KYdpazF2GemqSnWiuJo28YMaOobjk3HXRaO4RHQyiWVt5h0q', 'admin', 'Admin', '', '', 1, '2026-05-01 06:09:10', '2026-05-02 12:16:50', '2026-05-02 20:16:50');
+(6, 'JO', 'eh202204534@wmsu.edu.ph', '$2y$10$mJEb0N3K2SGIRYmnMBFg8OUK8roG/lw9dMZwlrWKsrFqwre70yF/a', 'Jolouis Sardani', 'Admin', '', '', 1, '2026-05-01 06:07:50', '2026-05-03 04:37:36', '2026-05-03 12:37:36'),
+(7, 'admin@wmsu.edu.ph', 'admin@wmsu.edu.ph', '$2y$10$zWQa6KYdpazF2GemqSnWiuJo28YMaOobjk3HXRaO4RHQyiWVt5h0q', 'admin', 'Admin', '', '', 1, '2026-05-01 06:09:10', '2026-05-03 04:14:32', '2026-05-03 12:14:32');
 
 --
 -- Indexes for dumped tables
@@ -487,19 +500,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `document_files`
 --
 ALTER TABLE `document_files`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `document_history`
 --
 ALTER TABLE `document_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `document_recipients`
 --
 ALTER TABLE `document_recipients`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `memorandum_orders`
@@ -511,13 +524,13 @@ ALTER TABLE `memorandum_orders`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `receivers`
 --
 ALTER TABLE `receivers`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `recipient_groups`
@@ -529,7 +542,7 @@ ALTER TABLE `recipient_groups`
 -- AUTO_INCREMENT for table `special_orders`
 --
 ALTER TABLE `special_orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -547,7 +560,7 @@ ALTER TABLE `travel_orders`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables
