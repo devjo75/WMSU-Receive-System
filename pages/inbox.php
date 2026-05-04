@@ -112,7 +112,7 @@ $query = "
                      WHEN t.id IS NOT NULL THEN 'Travel Order'
                 END
             )
-            WHEN 'Memorandum Order' THEN 'memorandum'
+            WHEN 'Memorandum Order' THEN 'memorandum_order'
             WHEN 'Special Order'    THEN 'special_order'
             WHEN 'Travel Order'     THEN 'travel_order'
         END
@@ -534,7 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <p id="modalDateIssued" class="text-sm font-semibold text-gray-800">-</p>
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 font-secondary">Concerned Person</p>
+                        <p class="text-xs text-gray-500 font-secondary">Concerned Person(s)</p>
                         <p id="modalConcerned" class="text-sm font-semibold text-gray-800">-</p>
                     </div>
                     <div>

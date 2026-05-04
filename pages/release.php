@@ -47,7 +47,7 @@ $query = "
     FROM memorandum_orders m
     LEFT JOIN document_recipients dr ON dr.document_id = m.id 
         AND dr.document_type = 'Memorandum Order'
-    LEFT JOIN document_files df ON df.document_id = m.id AND df.document_type = 'memorandum'
+    LEFT JOIN document_files df ON df.document_id = m.id AND df.document_type = 'memorandum_order'
     " . ($isAdmin ? "WHERE m.deleted_at IS NULL" : "WHERE m.created_by = ? AND m.deleted_at IS NULL") . "
     GROUP BY m.id
 
