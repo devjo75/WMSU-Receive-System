@@ -154,7 +154,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest = UPLOAD_DIR . $stored_name;
                 
                 if (move_uploaded_file($_FILES['fileUpload']['tmp_name'][$i], $dest)) {
-                    $is_image = in_array($mime, ['image/jpeg', 'image/png']);
                     $saved_files[] = [
                         'original_name' => $_FILES['fileUpload']['name'][$i],
                         'stored_name' => $stored_name,
@@ -162,7 +161,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'file_path' => 'uploads/documents/' . $stored_name,
                         'mime' => $mime,
                         'size' => $size,
-                        'ocr_text' => ($is_image && $i === 0) ? (trim($_POST['ocr_text'] ?? '') ?: null) : null,
                     ];
                 } else {
                     $file_errors[] = 'Failed to save: ' . $_FILES['fileUpload']['name'][$i];
@@ -290,8 +288,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($saved_files)) {
                     $file_stmt = $pdo->prepare("
                         INSERT INTO document_files 
-                            (document_type, document_id, original_name, stored_name, file_path, mime_type, file_size, ocr_text)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            (document_type, document_id, original_name, stored_name, file_path, mime_type, file_size)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ");
                     
                     foreach ($saved_files as $f) {
@@ -303,7 +301,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $f['file_path'],
                             $f['mime'],
                             $f['size'],
-                            $f['ocr_text'] ?? null,
                         ]);
                     }
                 }
@@ -703,36 +700,6 @@ $avatar_colors = [
                                     </label>
                                 </div>
                                 <div id="fileList" class="mt-3 space-y-2"></div>
-
-                                <!-- Hidden OCR text submitted with form -->
-                                <input type="hidden" id="ocr_text_input" name="ocr_text">
-
-                                <!-- OCR Progress (shown only when an image is uploaded) -->
-                                <div id="ocrProgress" class="hidden mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <svg id="ocrSpinner" class="w-4 h-4 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                                        </svg>
-                                        <svg id="ocrCheck" class="hidden w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                        <span id="ocrStatusText" class="text-xs font-semibold font-secondary text-blue-700">Scanning image for text...</span>
-                                    </div>
-                                    <div class="w-full bg-blue-200 rounded-full h-1.5">
-                                        <div id="ocrProgressBar" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
-                                    </div>
-                                </div>
-                                <!-- Refresh OCR button (appears when text not extracted) -->
-                                <div id="ocrRetryContainer" class="hidden mt-2">
-                                    <button type="button" id="retryOcrBtn" class="inline-flex items-center gap-1 text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 px-3 py-1.5 rounded-lg font-secondary transition">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                        </svg>
-                                        ⟳ Refresh OCR
-                                    </button>
-                                    <span class="text-xs text-gray-500 ml-2 font-secondary">No text extracted? Click to try again.</span>
-                                </div>
                             </div>
 
                             <div class="border border-gray-200 rounded-lg p-4">
@@ -1215,27 +1182,11 @@ $avatar_colors = [
             const dataTransfer = new DataTransfer();
             uploadedFiles.forEach(file => dataTransfer.items.add(file));
             fileUpload.files = dataTransfer.files;
-            
-            const firstFile = uploadedFiles[0];
-            const isImg = firstFile && (firstFile.type === 'image/jpeg' || firstFile.type === 'image/png');
-            const retryContainer = document.getElementById('ocrRetryContainer');
-            if (isImg && !ocrRunning && (!ocrInput.value || ocrInput.value.trim() === '')) {
-                retryContainer.classList.remove('hidden');
-            } else {
-                retryContainer.classList.add('hidden');
-            }
         }
         
         window.removeFile = function(index) {
-            const wasImage = (uploadedFiles[index] && (uploadedFiles[index].type === 'image/jpeg' || uploadedFiles[index].type === 'image/png'));
             uploadedFiles.splice(index, 1);
             displayFiles();
-            if (wasImage && (!uploadedFiles.length || !(uploadedFiles[0] && (uploadedFiles[0].type === 'image/jpeg' || uploadedFiles[0].type === 'image/png')))) {
-                resetOCR();
-                if (currentWorker) { currentWorker.terminate(); currentWorker = null; }
-                ocrRunning = false;
-                lockSubmit(false);
-            }
         };
         
         // Receiver filtering
@@ -1289,179 +1240,5 @@ $avatar_colors = [
         });
     </script>
     <script src="../js/sidebar.js"></script>
-
-    <!-- Tesseract.js OCR -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
-    <script>
-    (function () {
-        const ocrInput      = document.getElementById('ocr_text_input');
-        const ocrProgress   = document.getElementById('ocrProgress');
-        const ocrBar        = document.getElementById('ocrProgressBar');
-        const ocrStatus     = document.getElementById('ocrStatusText');
-        const ocrSpinner    = document.getElementById('ocrSpinner');
-        const ocrCheck      = document.getElementById('ocrCheck');
-        const submitBtn     = document.getElementById('submitBtn');
-        const draftBtn      = document.getElementById('draftBtn');
-        const fileUploadEl  = document.getElementById('fileUpload');
-        const retryBtn      = document.getElementById('retryOcrBtn');
-
-        let currentWorker = null;
-        let ocrRunning = false;
-
-        function isImage(file) {
-            return file && (file.type === 'image/jpeg' || file.type === 'image/png');
-        }
-
-        function lockSubmit(lock) {
-            submitBtn.disabled = lock;
-            draftBtn.disabled = lock;
-            if (lock) {
-                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                submitBtn.classList.remove('hover:bg-crimson-800', 'hover:scale-[1.02]', 'active:scale-[0.98]');
-                draftBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                submitBtn.title = 'Please wait — scanning image for text…';
-            } else {
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitBtn.classList.add('hover:bg-crimson-800', 'hover:scale-[1.02]', 'active:scale-[0.98]');
-                draftBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitBtn.title = '';
-            }
-        }
-
-        function resetOCR() {
-            ocrProgress.classList.add('hidden');
-            ocrProgress.classList.remove('bg-green-50', 'border-green-200');
-            ocrProgress.classList.add('bg-blue-50', 'border-blue-200');
-            ocrBar.style.width = '0%';
-            ocrBar.classList.remove('bg-green-500');
-            ocrBar.classList.add('bg-blue-600');
-            ocrStatus.classList.remove('text-green-700', 'text-red-600');
-            ocrStatus.classList.add('text-blue-700');
-            ocrStatus.textContent = 'Scanning image for text…';
-            ocrSpinner.classList.remove('hidden');
-            ocrCheck.classList.add('hidden');
-            ocrInput.value = '';
-            const retryContainer = document.getElementById('ocrRetryContainer');
-            if (retryContainer) retryContainer.classList.add('hidden');
-        }
-
-        function preprocessImage(file) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const scale  = Math.max(1, 1600 / img.width);
-                    const canvas = document.createElement('canvas');
-                    canvas.width  = img.width  * scale;
-                    canvas.height = img.height * scale;
-                    const ctx = canvas.getContext('2d');
-                    ctx.filter = 'grayscale(1) contrast(1.6) brightness(1.05)';
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    canvas.toBlob(resolve, 'image/png');
-                };
-                img.src = URL.createObjectURL(file);
-            });
-        }
-
-        async function runOCR(file) {
-            if (currentWorker) {
-                try { await currentWorker.terminate(); } catch(e) {}
-                currentWorker = null;
-            }
-            if (ocrRunning) return;
-            ocrRunning = true;
-            lockSubmit(true);
-            resetOCR();
-            ocrProgress.classList.remove('hidden');
-            const retryContainer = document.getElementById('ocrRetryContainer');
-            if (retryContainer) retryContainer.classList.add('hidden');
-
-            try {
-                const cleaned = await preprocessImage(file);
-                const worker = await Tesseract.createWorker('eng', 1, {
-                    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/worker.min.js',
-                    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-                    corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.0/tesseract-core-simd-lstm.wasm.js',
-                    logger: (m) => {
-                        if (m.status === 'recognizing text') {
-                            const pct = Math.round((m.progress || 0) * 100);
-                            ocrBar.style.width = pct + '%';
-                            ocrStatus.textContent = 'Scanning… ' + pct + '%';
-                        }
-                    }
-                });
-                currentWorker = worker;
-
-                await worker.setParameters({
-                    tessedit_pageseg_mode: '6',
-                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:?!-()\'"',
-                });
-
-                const { data: { text } } = await worker.recognize(cleaned);
-                await worker.terminate();
-                currentWorker = null;
-
-                const extracted = text.trim();
-                ocrInput.value  = extracted;
-
-                ocrBar.style.width = '100%';
-                ocrBar.classList.remove('bg-blue-600');
-                ocrBar.classList.add('bg-green-500');
-                ocrProgress.classList.remove('bg-blue-50', 'border-blue-200');
-                ocrProgress.classList.add('bg-green-50', 'border-green-200');
-                ocrStatus.classList.remove('text-blue-700');
-                ocrStatus.classList.add('text-green-700');
-                ocrSpinner.classList.add('hidden');
-                ocrCheck.classList.remove('hidden');
-                if (extracted) {
-                    ocrStatus.textContent = '✓ Text extracted (' + extracted.length + ' characters) — ready to submit';
-                } else {
-                    ocrStatus.textContent = '⚠ No text found in image — you can still submit, or click Refresh OCR';
-                    if (retryContainer) retryContainer.classList.remove('hidden');
-                }
-
-                setTimeout(() => {
-                    if (extracted) resetOCR();
-                }, 3000);
-
-            } catch (err) {
-                console.error('OCR error:', err);
-                ocrStatus.textContent = '⚠ Scan failed — click "Refresh OCR" to try again.';
-                ocrStatus.classList.remove('text-blue-700');
-                ocrStatus.classList.add('text-red-600');
-                ocrInput.value = '';
-                if (retryContainer) retryContainer.classList.remove('hidden');
-            } finally {
-                ocrRunning = false;
-                lockSubmit(false);
-            }
-        }
-
-        fileUploadEl.addEventListener('change', async () => {
-            await new Promise(r => setTimeout(r, 50));
-            const files = fileUploadEl.files;
-            if (files.length > 0 && isImage(files[0])) {
-                await runOCR(files[0]);
-            } else {
-                resetOCR();
-            }
-        });
-
-        if (retryBtn) {
-            retryBtn.addEventListener('click', async () => {
-                const files = fileUploadEl.files;
-                if (files.length && isImage(files[0])) {
-                    await runOCR(files[0]);
-                } else {
-                    const retryContainer = document.getElementById('ocrRetryContainer');
-                    if (retryContainer) retryContainer.classList.add('hidden');
-                }
-            });
-        }
-
-        document.getElementById('receiveForm').addEventListener('submit', (e) => {
-            if (ocrRunning) { e.preventDefault(); alert('Please wait for OCR to finish or cancel it.'); return false; }
-        });
-    })();
-    </script>
 </body>
 </html>

@@ -42,8 +42,7 @@ $query = "
         SUM(CASE WHEN dr.status = 'Received' THEN 1 ELSE 0 END) as received_count,
         GROUP_CONCAT(DISTINCT dr.recipient_name) as recipients,
         df.file_path,
-        df.original_name as file_name,
-        df.ocr_text
+        df.original_name as file_name
     FROM memorandum_orders m
     LEFT JOIN document_recipients dr ON dr.document_id = m.id 
         AND dr.document_type = 'Memorandum Order'
@@ -67,8 +66,7 @@ $query = "
         SUM(CASE WHEN dr.status = 'Received' THEN 1 ELSE 0 END) as received_count,
         GROUP_CONCAT(DISTINCT dr.recipient_name) as recipients,
         df.file_path,
-        df.original_name as file_name,
-        df.ocr_text
+        df.original_name as file_name
     FROM special_orders s
     LEFT JOIN document_recipients dr ON dr.document_id = s.id 
         AND dr.document_type = 'Special Order'
@@ -92,8 +90,7 @@ $query = "
         SUM(CASE WHEN dr.status = 'Received' THEN 1 ELSE 0 END) as received_count,
         GROUP_CONCAT(DISTINCT dr.recipient_name) as recipients,
         df.file_path,
-        df.original_name as file_name,
-        df.ocr_text
+        df.original_name as file_name
     FROM travel_orders t
     LEFT JOIN document_recipients dr ON dr.document_id = t.id 
         AND dr.document_type = 'Travel Order'
@@ -120,7 +117,6 @@ foreach ($raw_documents as $doc) {
         $grouped_docs[$key]['files'][] = [
             'name'     => $doc['file_name'],
             'path'     => $doc['file_path'],
-            'ocr_text' => $doc['ocr_text'] ?? '',
         ];
     }
 }
@@ -448,34 +444,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     <div id="releaseModalFiles" class="space-y-2"></div>
                     <p id="releaseNoFilesMsg" class="text-xs text-gray-400 hidden font-secondary">No files attached.</p>
                 </div>
-
-                <!-- OCR / Soft-copy section -->
-                <div id="releaseOcrSection" class="hidden mt-4 mb-2">
-                    <div class="flex items-center justify-between mb-2">
-                        <p class="text-xs font-semibold text-blue-700 font-secondary uppercase tracking-wide flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            Scanned Text (Soft Copy)
-                        </p>
-                        <div class="flex gap-2">
-                            <button id="releaseOpenOcrPdfBtn" onclick="openReleaseOcrPDF()" class="flex items-center gap-1 text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-secondary">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                </svg>
-                                Open PDF
-                            </button>
-                            <button id="releaseDownloadOcrPdfBtn" onclick="downloadReleaseOcrPDF()" class="flex items-center gap-1 text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-secondary">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                </svg>
-                                Download PDF
-                            </button>
-                        </div>
-                    </div>
-                    <div id="releaseOcrTextBox" class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-gray-700 font-secondary whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed"></div>
-                    <p class="text-xs text-gray-400 mt-1 font-secondary">Text automatically extracted from the uploaded image.</p>
-                </div>
             </div>
         </div>
     </div>
@@ -589,20 +557,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             // ── Populate attached files ───────────────────────────────────────
             const filesContainer = document.getElementById('releaseModalFiles');
             const noFilesMsg     = document.getElementById('releaseNoFilesMsg');
-            const ocrSection     = document.getElementById('releaseOcrSection');
-            const ocrTextBox     = document.getElementById('releaseOcrTextBox');
             filesContainer.innerHTML = '';
-            ocrTextBox.textContent   = '';
-            ocrSection.classList.add('hidden');
-            ocrTextBox.className     = 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-gray-700 font-secondary whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed';
-
-            const openBtn = document.getElementById('releaseOpenOcrPdfBtn');
-            const downBtn = document.getElementById('releaseDownloadOcrPdfBtn');
 
             if (files && files.length > 0) {
                 noFilesMsg.classList.add('hidden');
-                let hasValidOcr = false;
-                files.forEach((f, idx) => {
+                files.forEach((f) => {
                     const a = document.createElement('a');
                     let filePath = f.path.replace(/^\/+/, '');
                     a.href   = BASE_PATH + '/' + filePath;
@@ -617,34 +576,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>`;
                     filesContainer.appendChild(a);
-
-                    if (idx === 0 && f.name && f.name.match(/\.(jpe?g|png)$/i)) {
-                        if (f.ocr_text && f.ocr_text.trim()) {
-                            ocrTextBox.textContent = f.ocr_text.trim();
-                            hasValidOcr = true;
-                        } else {
-                            ocrTextBox.textContent = '⚠ No text was extracted from this image. The sender may have submitted the document before OCR completed, or the image quality was insufficient. PDF generation is disabled.';
-                            ocrTextBox.classList.add('text-red-700', 'bg-red-50', 'border-red-200');
-                        }
-                        ocrSection.classList.remove('hidden');
-                    } else if (idx === 0) {
-                        ocrTextBox.textContent = 'The attached document is not an image (PDF/DOC). No scanned text available.';
-                        ocrTextBox.classList.add('text-gray-600', 'bg-gray-100', 'border-gray-300');
-                        ocrSection.classList.remove('hidden');
-                    }
                 });
-
-                if (hasValidOcr) {
-                    if (openBtn) { openBtn.disabled = false; openBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
-                    if (downBtn) { downBtn.disabled = false; downBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
-                    ocrTextBox.classList.remove('text-red-700', 'bg-red-50', 'border-red-200');
-                } else {
-                    if (openBtn) { openBtn.disabled = true; openBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
-                    if (downBtn) { downBtn.disabled = true; downBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
-                }
             } else {
                 noFilesMsg.classList.remove('hidden');
-                ocrSection.classList.add('hidden');
             }
 
             document.getElementById('releaseModal').classList.remove('hidden');
@@ -789,105 +723,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     </script>
 
     <script src="../js/sidebar.js"></script>
-
-    <!-- jsPDF for soft-copy PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-    function buildReleaseOcrPDF() {
-        if (!currentReleaseDocument) return null;
-        const rawText = document.getElementById('releaseOcrTextBox').textContent.trim();
-        if (!rawText || rawText.startsWith('⚠') || rawText.includes('No text was extracted')) return null;
-
-        const { jsPDF } = window.jspdf;
-        const doc     = new jsPDF({ unit: 'mm', format: 'a4' });
-        const pageW   = doc.internal.pageSize.getWidth();
-        const pageH   = doc.internal.pageSize.getHeight();
-        const margin  = 20;
-        const usableW = pageW - margin * 2;
-        let y = margin;
-
-        function newPage() { doc.addPage(); y = margin; drawBorder(); }
-        function checkY(need) { if (y + need > pageH - margin) newPage(); }
-        function drawBorder() {
-            doc.setDrawColor(170, 0, 3); doc.setLineWidth(0.5);
-            doc.rect(10, 10, pageW - 20, pageH - 20);
-        }
-        drawBorder();
-
-        doc.setFillColor(170, 0, 3);
-        doc.rect(margin, y, usableW, 18, 'F');
-        doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-        doc.text('Western Mindanao State University', pageW / 2, y + 7, { align: 'center' });
-        doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-        doc.text('Document Management System — Soft Copy', pageW / 2, y + 13, { align: 'center' });
-        y += 23;
-
-        doc.setDrawColor(170, 0, 3); doc.setLineWidth(0.8);
-        doc.line(margin, y, margin + usableW, y); y += 6;
-
-        const details = [
-            ['Document Type', currentReleaseDocument.type   || 'N/A'],
-            ['Document No.',  currentReleaseDocument.number || 'N/A'],
-            ['Subject',       currentReleaseDocument.subject || 'N/A'],
-            ['Date Issued',   currentReleaseDocument.issued ? new Date(currentReleaseDocument.issued).toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'}) : 'N/A'],
-        ];
-        const labelW = 48, valueW = usableW - labelW - 2;
-        details.forEach(([label, value]) => {
-            doc.setFontSize(8.5);
-            const lines = doc.splitTextToSize(value, valueW);
-            const rowH  = Math.max(7, lines.length * 5 + 2);
-            checkY(rowH + 1);
-            doc.setFillColor(245, 245, 245); doc.rect(margin, y, labelW, rowH, 'F');
-            doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2); doc.rect(margin, y, labelW, rowH);
-            doc.setFont('helvetica', 'bold'); doc.setTextColor(80, 80, 80); doc.text(label, margin + 2, y + 4.5);
-            doc.setFillColor(255, 255, 255); doc.rect(margin + labelW + 2, y, valueW, rowH, 'F');
-            doc.rect(margin + labelW + 2, y, valueW, rowH);
-            doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30); doc.text(lines, margin + labelW + 4, y + 4.5);
-            y += rowH + 1;
-        });
-        y += 6;
-
-        checkY(14);
-        doc.setFillColor(219, 234, 254); doc.rect(margin, y, usableW, 10, 'F');
-        doc.setDrawColor(147, 197, 253); doc.setLineWidth(0.3); doc.rect(margin, y, usableW, 10);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(29, 78, 216);
-        doc.text('Scanned Text (Soft Copy)', margin + 3, y + 6.5); y += 13;
-
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(30, 30, 30);
-        const textLines = doc.splitTextToSize(rawText, usableW - 6);
-        textLines.forEach(line => { checkY(6); doc.text(line, margin + 3, y); y += 5.2; });
-        y += 8;
-
-        checkY(12);
-        doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
-        doc.line(margin, y, margin + usableW, y); y += 5;
-        const now = new Date().toLocaleString('en-PH', {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
-        doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
-        doc.text('Generated by WMSU Document Management System on ' + now, pageW / 2, y + 4, { align: 'center' });
-
-        const total = doc.internal.getNumberOfPages();
-        for (let p = 1; p <= total; p++) {
-            doc.setPage(p);
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
-            doc.text('Page ' + p + ' of ' + total, pageW - margin, pageH - 12, { align: 'right' });
-        }
-        return doc;
-    }
-
-    function openReleaseOcrPDF() {
-        const doc = buildReleaseOcrPDF();
-        if (!doc) { alert('No valid scanned text available to generate PDF.'); return; }
-        window.open(doc.output('bloburl'), '_blank');
-    }
-
-    function downloadReleaseOcrPDF() {
-        const doc = buildReleaseOcrPDF();
-        if (!doc) { alert('No valid scanned text available to generate PDF.'); return; }
-        const num  = (currentReleaseDocument.number || 'document').replace(/[^a-zA-Z0-9\-_]/g, '_');
-        const type = (currentReleaseDocument.type   || 'doc').replace(/\s+/g, '_');
-        doc.save('WMSU_' + type + '_' + num + '_softcopy.pdf');
-    }
-    </script>
 </html>
 
 <!-- Release Delete Confirmation Modal -->
